@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MechToolkit — Pipe Wall Thickness (ASME B31.3)</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+:root{
+  --ink:#14202B;
+  --paper:#F4F5F3;
+  --panel:#FFFFFF;
+  --line:#D7DBDD;
+  --steel:#3E6B8A;
+  --steel-dk:#2A4C63;
+  --amber:#E8A33D;
+  --amber-dk:#B97B1F;
+  --teal:#3E7C6E;
+  --rust:#B5432E;
+  --mono:'IBM Plex Mono',monospace;
+  --sans:'IBM Plex Sans',sans-serif;
+  --cond:'IBM Plex Sans Condensed',sans-serif;
+}
+*{box-sizing:border-box;}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);}
+.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh;}
+
+/* ---- sidebar ---- */
+.sidebar{background:var(--ink);color:#DDE3E7;padding:24px 0;position:sticky;top:0;height:100vh;}
+.brand{padding:0 20px 20px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:16px;}
+.brand .mark{font-family:var(--mono);font-weight:700;color:var(--amber);font-size:12px;letter-spacing:.14em;}
+.brand h1{font-family:var(--cond);font-size:21px;margin:4px 0 0;font-weight:700;letter-spacing:.01em;}
+.brand p{font-size:11px;color:#8FA0AC;margin:4px 0 0;line-height:1.4;}
+.nav-group{padding:0 12px;}
+.nav-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:#6E8493;padding:14px 8px 6px;text-transform:uppercase;}
+.nav-item{display:flex;gap:10px;align-items:flex-start;padding:10px 8px;border-radius:4px;font-size:13px;cursor:default;}
+.nav-item.active{background:rgba(232,163,61,.12);border-left:2px solid var(--amber);}
+.nav-item .n{font-family:var(--mono);color:var(--amber);font-weight:600;min-width:20px;}
+.nav-item.disabled{opacity:.38;}
+.nav-item.disabled .n{color:#6E8493;}
+.sidebar .foot{padding:20px;margin-top:20px;border-top:1px solid rgba(255,255,255,.12);font-size:10.5px;color:#6E8493;line-height:1.5;}
+
+/* ---- main ---- */
+main{padding:28px 36px 80px;max-width:1180px;}
+.titleblock{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--steel);margin-bottom:22px;}
+.tb-head{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);}
+.tb-head h2{font-family:var(--cond);font-size:19px;margin:0;font-weight:700;}
+.tb-head .std{font-family:var(--mono);font-size:11px;color:var(--steel-dk);background:#EAF0F3;padding:4px 9px;border-radius:3px;}
+.tb-grid{display:grid;grid-template-columns:repeat(4,1fr);}
+.tb-cell{padding:9px 14px;border-right:1px solid var(--line);border-top:1px solid var(--line);}
+.tb-cell:nth-child(4n){border-right:none;}
+.tb-cell label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:#7C8A93;text-transform:uppercase;margin-bottom:4px;}
+.tb-cell input{width:100%;border:none;font-family:var(--sans);font-size:13px;padding:2px 0;background:transparent;color:var(--ink);}
+.tb-cell input:focus{outline:none;border-bottom:1px solid var(--steel);}
+
+section.card{background:var(--panel);border:1px solid var(--line);margin-bottom:20px;}
+.card-h{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;border-bottom:1px solid var(--line);background:#FAFBFA;}
+.card-h h3{font-family:var(--cond);font-size:16px;margin:0;font-weight:700;display:flex;align-items:center;gap:8px;}
+.card-h h3 .idx{font-family:var(--mono);color:var(--steel);font-size:13px;}
+.card-body{padding:18px;}
+.hint{font-size:12px;color:#5C6B74;line-height:1.55;}
+
+.warn{display:flex;gap:9px;background:#FBF3E4;border:1px solid #EFD9A8;border-left:3px solid var(--amber-dk);padding:10px 13px;font-size:12px;color:#6B4E13;margin:10px 0;line-height:1.5;}
+.warn b{color:var(--amber-dk);}
+.danger{display:flex;gap:9px;background:#FBEBE7;border:1px solid #E7BEB2;border-left:3px solid var(--rust);padding:10px 13px;font-size:12.5px;color:#7A2E1D;margin:10px 0;line-height:1.5;}
+
+table.data{width:100%;border-collapse:collapse;font-size:12.5px;}
+table.data th{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:#7C8A93;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
+table.data td{padding:4px 8px;border-bottom:1px solid #EEF0EF;}
+table.data input,table.data select{width:100%;border:1px solid transparent;background:transparent;font-family:var(--mono);font-size:12.5px;padding:5px 6px;border-radius:3px;color:var(--ink);}
+table.data input:focus,table.data select:focus{outline:none;border-color:var(--steel);background:#fff;}
+table.data input.empty{background:#FBEBE7;border-color:#E7BEB2;}
+table.data tr:hover td{background:#FAFBFA;}
+.del-btn{background:none;border:none;color:#B0393A;cursor:pointer;font-size:15px;line-height:1;padding:2px 6px;}
+.small-btn{font-family:var(--mono);font-size:11px;padding:6px 12px;border-radius:3px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--steel-dk);}
+.small-btn:hover{border-color:var(--steel);}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;}
+.field{margin-bottom:14px;}
+.field label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:#5C6B74;margin-bottom:5px;}
+.field label .req{color:var(--rust);}
+.field input,.field select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:3px;font-family:var(--mono);font-size:13.5px;background:#fff;color:var(--ink);}
+.field input:focus,.field select:focus{outline:none;border-color:var(--steel);box-shadow:0 0 0 2px rgba(62,107,138,.12);}
+.field .sub{font-size:11px;color:#8A97A0;margin-top:4px;}
+.unit-row{display:flex;gap:0;}
+.unit-row input{border-top-right-radius:0;border-bottom-right-radius:0;flex:1;}
+.unit-row select{width:70px;border-top-left-radius:0;border-bottom-left-radius:0;border-left:none;}
+
+.calc-btn{font-family:var(--cond);font-weight:700;font-size:15px;letter-spacing:.02em;background:var(--steel-dk);color:#fff;border:none;padding:13px 22px;border-radius:3px;cursor:pointer;width:100%;}
+.calc-btn:hover{background:var(--ink);}
+
+.result-band{background:var(--ink);color:#fff;padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:0;}
+.result-band .r{padding:0 20px;border-right:1px solid rgba(255,255,255,.14);}
+.result-band .r:last-child{border-right:none;}
+.result-band .r .lab{font-family:var(--mono);font-size:10px;color:#8FA0AC;letter-spacing:.08em;text-transform:uppercase;}
+.result-band .r .val{font-family:var(--mono);font-size:24px;font-weight:600;color:var(--amber);margin-top:4px;}
+.result-band .r .val .u{font-size:13px;color:#DDE3E7;font-weight:400;margin-left:4px;}
+
+.steps{font-family:var(--mono);font-size:12.5px;line-height:2;padding:16px 18px;background:#FAFBFA;border-top:1px solid var(--line);white-space:pre-wrap;}
+.steps .eq{color:var(--steel-dk);}
+
+.status-pass{color:var(--teal);font-weight:600;}
+.status-fail{color:var(--rust);font-weight:600;}
+
+footer.legal{margin-top:30px;font-size:11px;color:#8A97A0;line-height:1.6;border-top:1px solid var(--line);padding-top:14px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <aside class="sidebar">
+    <div class="brand">
+      <div class="mark">MECHTOOLKIT</div>
+      <h1>Refinery Eng. Tools</h1>
+      <p>Standards-based calculation modules for rotating &amp; static equipment engineering.</p>
+    </div>
+    <div class="nav-group">
+      <div class="nav-label">Module 01</div>
+      <div class="nav-item active"><span class="n">▣</span><span>Pipe Wall Thickness<br><span style="color:#8FA0AC;font-size:11px;">ASME B31.3 §304.1</span></span></div>
+      <div class="nav-label">Planned</div>
+      <div class="nav-item disabled"><span class="n">▢</span><span>Flange Rating Check<br><span style="font-size:11px;">ASME B16.5</span></span></div>
+      <div class="nav-item disabled"><span class="n">▢</span><span>Relief Valve Sizing<br><span style="font-size:11px;">API 520/521</span></span></div>
+      <div class="nav-item disabled"><span class="n">▢</span><span>Pump NPSH Margin<br><span style="font-size:11px;">API 610 / Hydraulic Inst.</span></span></div>
+      <div class="nav-item disabled"><span class="n">▢</span><span>Pipe Support Spacing<br><span style="font-size:11px;">ASME B31.3 / MSS SP-69</span></span></div>
+    </div>
+    <div class="foot">v0.1 · local build<br>All standards data must be verified against your licensed copy before use in any engineering deliverable.</div>
+  </aside>
+
+  <main>
+    <div class="titleblock">
+      <div class="tb-head">
+        <h2>Pipe Wall Thickness Calculation</h2>
+        <div class="std">ASME B31.3-2024 · §304.1.2</div>
+      </div>
+      <div class="tb-grid">
+        <div class="tb-cell"><label>Project</label><input id="tb-project" placeholder="Project name"></div>
+        <div class="tb-cell"><label>Doc No.</label><input id="tb-doc" placeholder="e.g. BAOR-PIP-CALC-001"></div>
+        <div class="tb-cell"><label>Rev.</label><input id="tb-rev" placeholder="0"></div>
+        <div class="tb-cell"><label>Date</label><input id="tb-date" type="date"></div>
+        <div class="tb-cell"><label>Line No. / Tag</label><input id="tb-line" placeholder="e.g. 6-P-1042-B3C1"></div>
+        <div class="tb-cell"><label>Service</label><input id="tb-service" placeholder="e.g. Crude feed"></div>
+        <div class="tb-cell"><label>Prepared by</label><input id="tb-by" placeholder="Name"></div>
+        <div class="tb-cell"><label>Checked by</label><input id="tb-checked" placeholder="Name"></div>
+      </div>
+    </div>
+
+    <div class="danger" id="global-data-warning">
+      <div>⚠</div>
+      <div><b>Data integrity notice.</b> This tool does not embed ASME B31.3 Table A-1 (allowable stress values). You must enter allowable stress (S) values yourself, sourced directly from your licensed ASME B31.3-2024 copy, in the Material Database below. Joint factor (E), weld strength reduction factor (W), and the Y-coefficient are pre-filled with commonly published reference values as a starting point only — verify every one against Tables A-1B, 302.3.5, and 304.1.1 in your copy before relying on any result for a real deliverable.</div>
+    </div>
+
+    <!-- MATERIAL DATABASE -->
+    <section class="card">
+      <div class="card-h">
+        <h3><span class="idx">A.</span>Material Database</h3>
+        <div style="display:flex;gap:8px;">
+          <button class="small-btn" onclick="addMaterialRow()">+ Add material</button>
+          <button class="small-btn" onclick="exportDB()">Export DB (.xlsx)</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <p class="hint">Pre-loaded with common refinery pipe specs by name only. <b>Allowable stress (S) and reference cells are intentionally blank</b> — enter the value for your design temperature directly from Table A-1, plus the table/line/page reference for traceability. Rows highlighted red are missing required data and cannot be used in a calculation.</p>
+        <div style="overflow-x:auto;">
+        <table class="data" id="material-table">
+          <thead><tr>
+            <th style="width:16%">Spec / Grade</th>
+            <th style="width:18%">Description</th>
+            <th style="width:10%">Form</th>
+            <th style="width:10%">Design Temp (°C)</th>
+            <th style="width:10%">Allow. Stress S (MPa)</th>
+            <th style="width:16%">Reference (Table/Line/Pg)</th>
+            <th style="width:6%">Nom. OD table</th>
+            <th style="width:4%"></th>
+          </tr></thead>
+          <tbody id="material-tbody"></tbody>
+        </table>
+        </div>
+      </div>
+    </section>
+
+    <!-- CALCULATION INPUTS -->
+    <section class="card">
+      <div class="card-h"><h3><span class="idx">B.</span>Calculation Inputs</h3></div>
+      <div class="card-body">
+        <div class="grid2">
+          <div class="field">
+            <label>Material <span class="req">*</span></label>
+            <select id="in-material" onchange="onMaterialChange()"></select>
+            <div class="sub" id="material-s-echo"></div>
+          </div>
+          <div class="field">
+            <label>Design Temperature <span class="req">*</span></label>
+            <div class="unit-row"><input id="in-temp" type="number" placeholder="e.g. 350"><select id="in-temp-unit"><option value="C">°C</option><option value="F">°F</option></select></div>
+          </div>
+          <div class="field">
+            <label>Design Pressure (internal) <span class="req">*</span></label>
+            <div class="unit-row"><input id="in-press" type="number" placeholder="e.g. 4.2"><select id="in-press-unit"><option value="MPa">MPa</option><option value="bar">bar</option><option value="psi">psi</option><option value="kPa">kPa</option></select></div>
+          </div>
+          <div class="field">
+            <label>Outside Diameter (OD) <span class="req">*</span></label>
+            <div class="unit-row"><input id="in-od" type="number" placeholder="e.g. 168.3"><select id="in-od-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
+          </div>
+          <div class="field">
+            <label>Joint Type → Quality Factor E</label>
+            <select id="in-joint" onchange="onJointChange()">
+              <option value="1.00">Seamless — E = 1.00</option>
+              <option value="0.95">Double-welded (EFW/SAW), 100% RT — E = 0.95</option>
+              <option value="0.90">Electric Resistance Weld (ERW) — E = 0.85–1.00</option>
+              <option value="0.85">Double-welded, spot RT — E = 0.85</option>
+              <option value="0.65">Single-welded, no RT — E = 0.65</option>
+              <option value="0.60">Furnace butt-welded — E = 0.60</option>
+              <option value="custom">Custom / from Table A-1B…</option>
+            </select>
+            <input id="in-joint-custom" type="number" step="0.01" placeholder="E value" style="margin-top:6px;display:none;">
+          </div>
+          <div class="field">
+            <label>Weld Strength Reduction Factor W</label>
+            <input id="in-w" type="number" step="0.01" value="1.00">
+            <div class="sub">Default 1.00. Reduce per Table 302.3.5 only for longitudinal/spiral welds in the creep range (typically &gt; 425°C / 800°F depending on material). Verify applicability.</div>
+          </div>
+          <div class="field">
+            <label>Corrosion / Erosion Allowance, c <span class="req">*</span></label>
+            <div class="unit-row"><input id="in-corr" type="number" value="3.0"><select id="in-corr-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
+            <div class="sub">Engineering judgment input — corrosivity of service, expected life. Not from a standard table.</div>
+          </div>
+          <div class="field">
+            <label>Mechanical / Thread / Groove Allowance</label>
+            <div class="unit-row"><input id="in-mech" type="number" value="0"><select id="in-mech-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
+            <div class="sub">Only applies to threaded, grooved, or bored components (§304.1.2(a)(3)).</div>
+          </div>
+          <div class="field">
+            <label>Mill Undertolerance</label>
+            <div class="unit-row"><input id="in-mill" type="number" value="12.5" style="flex:1"><span style="display:flex;align-items:center;padding:0 10px;border:1px solid var(--line);border-left:none;background:#F4F5F3;font-family:var(--mono);font-size:13px;">%</span></div>
+            <div class="sub">12.5% is the common ASTM seamless-pipe default (e.g. A106/A335). Verify against the applicable ASTM spec for your selected material — plate/welded pipe tolerances differ.</div>
+          </div>
+        </div>
+        <button class="calc-btn" onclick="runCalc()">Calculate required wall thickness</button>
+        <div id="calc-warning"></div>
+      </div>
+    </section>
+
+    <!-- RESULTS -->
+    <section class="card" id="results-card" style="display:none;">
+      <div class="card-h"><h3><span class="idx">C.</span>Results</h3>
+        <button class="small-btn" onclick="exportCalc()">Export calc sheet (.xlsx)</button>
+      </div>
+      <div class="result-band">
+        <div class="r"><div class="lab">Pressure design thickness, t</div><div class="val" id="res-t">—<span class="u">mm</span></div></div>
+        <div class="r"><div class="lab">Min. required, t + allowances</div><div class="val" id="res-tm">—<span class="u">mm</span></div></div>
+        <div class="r"><div class="lab">Min. specified (incl. mill tol.), t<sub>min</sub></div><div class="val" id="res-tmin">—<span class="u">mm</span></div></div>
+      </div>
+      <div class="steps" id="calc-steps"></div>
+    </section>
+
+    <footer class="legal">
+      <b>Scope &amp; limitations:</b> This module implements the thin-wall straight-pipe formula of ASME B31.3 §304.1.2(a), Eq. 3a (t = PD / 2(SEW+PY)). It does not implement the thick-wall equation §304.1.2(b) — the tool will flag and stop if your inputs fall into that regime. It does not cover bends, miters, branch reinforcement, or external pressure (collapse). This is a personal calculation aid; it is not a substitute for review and sign-off by a qualified engineer against the current, licensed edition of ASME B31.3, and applicable project specifications.
+    </footer>
+  </main>
+</div>
+
+<script>
+/* ---------------- Unit helpers ---------------- */
+const toMPa = (v,u)=>({MPa:v,bar:v*0.1,psi:v*0.00689476,kPa:v*0.001}[u]);
+const toMM  = (v,u)=>u==='in'? v*25.4 : v;
+const toC   = (v,u)=>u==='F'? (v-32)*5/9 : v;
+const fmt = n => (Math.round(n*1000)/1000).toString();
+
+/* ---------------- Material DB (localStorage-backed) ---------------- */
+const DEFAULT_MATERIALS = [
+ {spec:"ASTM A106 Gr. B", desc:"Carbon steel, seamless", form:"Seamless", temp:"", s:"", ref:"", odref:"ASME B36.10"},
+ {spec:"ASTM A53 Gr. B", desc:"Carbon steel, smls/ERW", form:"Smls / ERW", temp:"", s:"", ref:"", odref:"ASME B36.10"},
+ {spec:"API 5L Gr. B", desc:"Line pipe, carbon steel", form:"Smls / Welded", temp:"", s:"", ref:"", odref:"ASME B36.10"},
+ {spec:"API 5L X52", desc:"Line pipe, HSLA", form:"Smls / Welded", temp:"", s:"", ref:"", odref:"ASME B36.10"},
+ {spec:"ASTM A333 Gr. 6", desc:"Low-temp carbon steel", form:"Seamless", temp:"", s:"", ref:"", odref:"ASME B36.10"},
+ {spec:"ASTM A335 P11", desc:"1.25Cr-0.5Mo alloy steel", form:"Seamless", temp:"", s:"", ref:"", odref:"ASME B36.10"},
+ {spec:"ASTM A335 P22", desc:"2.25Cr-1Mo alloy steel", form:"Seamless", temp:"", s:"", ref:"", odref:"ASME B36.10"},
+ {spec:"ASTM A335 P91", desc:"9Cr-1Mo-V alloy steel", form:"Seamless", temp:"", s:"", ref:"", odref:"ASME B36.10"},
+ {spec:"ASTM A312 TP304/304L", desc:"Austenitic stainless", form:"Seamless / Welded", temp:"", s:"", ref:"", odref:"ASME B36.19"},
+ {spec:"ASTM A312 TP316/316L", desc:"Austenitic stainless, Mo", form:"Seamless / Welded", temp:"", s:"", ref:"", odref:"ASME B36.19"},
+ {spec:"ASTM A790 UNS S31803", desc:"Duplex stainless (2205)", form:"Seamless / Welded", temp:"", s:"", ref:"", odref:"ASME B36.19"},
+ {spec:"ASTM A671/A672", desc:"EFW pipe, large OD", form:"Welded", temp:"", s:"", ref:"", odref:"Mfr. spec"},
+];
+
+function loadDB(){
+  const raw = localStorage.getItem('mtk_materials');
+  return raw ? JSON.parse(raw) : JSON.parse(JSON.stringify(DEFAULT_MATERIALS));
+}
+function saveDB(){ localStorage.setItem('mtk_materials', JSON.stringify(materials)); renderMaterialSelect(); }
+let materials = loadDB();
+
+function renderMaterialTable(){
+  const tbody = document.getElementById('material-tbody');
+  tbody.innerHTML = '';
+  materials.forEach((m,i)=>{
+    const tr = document.createElement('tr');
+    const missing = (v)=> v===''||v===null||v===undefined;
+    tr.innerHTML = `
+      <td><input value="${m.spec}" onchange="updMat(${i},'spec',this.value)"></td>
+      <td><input value="${m.desc}" onchange="updMat(${i},'desc',this.value)"></td>
+      <td><input value="${m.form}" onchange="updMat(${i},'form',this.value)"></td>
+      <td><input value="${m.temp}" type="number" placeholder="°C" onchange="updMat(${i},'temp',this.value)"></td>
+      <td><input class="${missing(m.s)?'empty':''}" value="${m.s}" type="number" placeholder="enter S" onchange="updMat(${i},'s',this.value)"></td>
+      <td><input class="${missing(m.ref)?'empty':''}" value="${m.ref}" placeholder="Table A-1, p.__" onchange="updMat(${i},'ref',this.value)"></td>
+      <td><input value="${m.odref}" onchange="updMat(${i},'odref',this.value)"></td>
+      <td><button class="del-btn" onclick="delMat(${i})">✕</button></td>`;
+    tbody.appendChild(tr);
+  });
+}
+function updMat(i,key,val){ materials[i][key]=val; saveDB(); renderMaterialTable(); }
+function delMat(i){ materials.splice(i,1); saveDB(); renderMaterialTable(); }
+function addMaterialRow(){ materials.push({spec:"New material",desc:"",form:"",temp:"",s:"",ref:"",odref:""}); saveDB(); renderMaterialTable(); }
+
+function renderMaterialSelect(){
+  const sel = document.getElementById('in-material');
+  const cur = sel.value;
+  sel.innerHTML = materials.map((m,i)=>`<option value="${i}">${m.spec} — ${m.desc||''}</option>`).join('');
+  if(cur) sel.value = cur;
+  onMaterialChange();
+}
+function onMaterialChange(){
+  const i = document.getElementById('in-material').value;
+  const m = materials[i];
+  const echo = document.getElementById('material-s-echo');
+  if(!m){ echo.textContent=''; return; }
+  if(m.s===''||m.s===null){
+    echo.innerHTML = `<span style="color:#B5432E;">No S value entered for this material — fill it in the Material Database above (row for ${m.spec}) before calculating.</span>`;
+  } else {
+    echo.textContent = `S = ${m.s} MPa @ ${m.temp||'—'}°C · Ref: ${m.ref||'not recorded'}`;
+  }
+}
+
+function onJointChange(){
+  const v = document.getElementById('in-joint').value;
+  const custom = document.getElementById('in-joint-custom');
+  custom.style.display = v==='custom' ? 'block' : 'none';
+}
+
+/* ---------------- Y-coefficient lookup (editable reference set) ---------------- */
+// Commonly published starting values per ASME B31.3 Table 304.1.1 logic (ferritic/austenitic steels, t<D/6).
+// MUST be verified against the user's licensed copy — see global warning banner.
+function suggestY(tempC, materialDesc){
+  const isAustenitic = /austenitic|stainless|tp304|tp316|duplex/i.test(materialDesc||'');
+  const brackets = isAustenitic
+    ? [[482,0.4],[510,0.4],[538,0.4],[566,0.4],[593,0.5],[649,0.7]]
+    : [[482,0.4],[510,0.5],[538,0.7],[566,0.7]];
+  for(const [t,y] of brackets){ if(tempC<=t) return y; }
+  return 0.7;
+}
+
+/* ---------------- Main calculation ---------------- */
+function runCalc(){
+  const warnBox = document.getElementById('calc-warning');
+  warnBox.innerHTML = '';
+  const mi = document.getElementById('in-material').value;
+  const m = materials[mi];
+
+  if(!m || m.s===''||m.s===null||isNaN(parseFloat(m.s))){
+    warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>Cannot calculate.</b> The selected material has no allowable stress (S) value. Enter it in the Material Database (Section A) from Table A-1 of your ASME B31.3-2024 copy, then recalculate.</div></div>`;
+    document.getElementById('results-card').style.display='none';
+    return;
+  }
+
+  const S = parseFloat(m.s);
+  const P = toMPa(parseFloat(document.getElementById('in-press').value), document.getElementById('in-press-unit').value);
+  const OD = toMM(parseFloat(document.getElementById('in-od').value), document.getElementById('in-od-unit').value);
+  const tempC = toC(parseFloat(document.getElementById('in-temp').value), document.getElementById('in-temp-unit').value);
+  const jointSel = document.getElementById('in-joint').value;
+  const E = jointSel==='custom' ? parseFloat(document.getElementById('in-joint-custom').value) : parseFloat(jointSel);
+  const W = parseFloat(document.getElementById('in-w').value);
+  const c = toMM(parseFloat(document.getElementById('in-corr').value), document.getElementById('in-corr-unit').value);
+  const mech = toMM(parseFloat(document.getElementById('in-mech').value), document.getElementById('in-mech-unit').value);
+  const millPct = parseFloat(document.getElementById('in-mill').value);
+
+  if([P,OD,tempC,E,W,c].some(v=>isNaN(v)) || !OD || !P){
+    warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>Missing or invalid input.</b> Check pressure, OD, temperature, and joint factor fields.</div></div>`;
+    document.getElementById('results-card').style.display='none';
+    return;
+  }
+
+  const Y = suggestY(tempC, m.desc + ' ' + m.spec);
+
+  // Thick-wall applicability check per §304.1.2
+  const ratioCheck = P / (S*E) > 0.385;
+  if(ratioCheck){
+    warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>Thick-wall regime detected (P/SE &gt; 0.385).</b> The thin-wall formula (Eq. 3a) used by this module is not valid here. ASME B31.3 §304.1.2(b) requires the thick-wall equation instead. This module does not implement it — perform this calculation manually or extend the tool before proceeding.</div></div>`;
+    document.getElementById('results-card').style.display='none';
+    return;
+  }
+
+  const t = (P*OD) / (2*(S*E*W + P*Y));           // Eq 3a, pressure design thickness
+  const tm = t + c + mech;                          // + allowances
+  const tmin = tm / (1 - millPct/100);               // required specified (nominal before mill tol.) thickness
+
+  // thin-wall validity self-check
+  const thinWallOK = t < OD/6;
+
+  document.getElementById('res-t').innerHTML = fmt(t)+'<span class="u">mm</span>';
+  document.getElementById('res-tm').innerHTML = fmt(tm)+'<span class="u">mm</span>';
+  document.getElementById('res-tmin').innerHTML = fmt(tmin)+'<span class="u">mm</span>';
+
+  document.getElementById('calc-steps').innerHTML =
+`<span class="eq">Eq. 3a (ASME B31.3 §304.1.2a):</span>  t = P·D / [2(S·E·W + P·Y)]
+
+  P  (design pressure)        = ${fmt(P)} MPa
+  D  (outside diameter)       = ${fmt(OD)} mm
+  S  (allowable stress)       = ${fmt(S)} MPa   [Ref: ${m.ref||'NOT RECORDED — verify'}]
+  E  (quality factor)         = ${fmt(E)}
+  W  (weld strength factor)   = ${fmt(W)}
+  Y  (coefficient @ ${fmt(tempC)}°C)     = ${fmt(Y)}   [suggested — verify vs Table 304.1.1]
+
+  t   = (${fmt(P)} × ${fmt(OD)}) / [2 × (${fmt(S)} × ${fmt(E)} × ${fmt(W)} + ${fmt(P)} × ${fmt(Y)})]
+      = ${fmt(t)} mm
+
+  t_m = t + c + mechanical allowance
+      = ${fmt(t)} + ${fmt(c)} + ${fmt(mech)}
+      = ${fmt(tm)} mm
+
+  t_min = t_m / (1 − mill undertolerance)
+        = ${fmt(tm)} / (1 − ${fmt(millPct)}%)
+        = ${fmt(tmin)} mm   ← minimum nominal wall thickness to specify/order
+
+  Thin-wall validity (t < D/6):  ${thinWallOK ? 'OK — thin-wall formula applicable' : 'CHECK — approaching thick-wall limit, review manually'}
+  P/SE = ${(P/(S*E)).toFixed(4)}  (must be ≤ 0.385 for Eq. 3a — ${ratioCheck? 'FAILED':'OK'})`;
+
+  document.getElementById('results-card').style.display = 'block';
+  window._lastCalc = {m,S,P,OD,tempC,E,W,Y,c,mech,millPct,t,tm,tmin};
+}
+
+/* ---------------- Excel export ---------------- */
+function exportDB(){
+  const rows = materials.map(m=>({Spec:m.spec,Description:m.desc,Form:m.form,"Design Temp (C)":m.temp,"Allowable Stress S (MPa)":m.s,Reference:m.ref,"OD Std":m.odref}));
+  const ws = XLSX.utils.json_to_sheet(rows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Material DB");
+  XLSX.writeFile(wb, "mechtoolkit_material_db.xlsx");
+}
+
+function exportCalc(){
+  if(!window._lastCalc){ alert('Run a calculation first.'); return; }
+  const c = window._lastCalc;
+  const tbRows = [
+    ["Project", document.getElementById('tb-project').value],
+    ["Doc No.", document.getElementById('tb-doc').value],
+    ["Revision", document.getElementById('tb-rev').value],
+    ["Date", document.getElementById('tb-date').value],
+    ["Line No. / Tag", document.getElementById('tb-line').value],
+    ["Service", document.getElementById('tb-service').value],
+    ["Prepared by", document.getElementById('tb-by').value],
+    ["Checked by", document.getElementById('tb-checked').value],
+    [],
+    ["Standard", "ASME B31.3-2024, Eq. 3a (§304.1.2a)"],
+    ["Material", c.m.spec],
+    ["Material S reference", c.m.ref || "NOT RECORDED - VERIFY"],
+    [],
+    ["Input","Value","Unit"],
+    ["Design Pressure P", c.P, "MPa"],
+    ["Outside Diameter D", c.OD, "mm"],
+    ["Design Temperature", c.tempC, "°C"],
+    ["Allowable Stress S", c.S, "MPa"],
+    ["Quality Factor E", c.E, ""],
+    ["Weld Strength Factor W", c.W, ""],
+    ["Y Coefficient (suggested — verify)", c.Y, ""],
+    ["Corrosion Allowance c", c.c, "mm"],
+    ["Mechanical Allowance", c.mech, "mm"],
+    ["Mill Undertolerance", c.millPct, "%"],
+    [],
+    ["Result","Value","Unit"],
+    ["Pressure design thickness t", c.t, "mm"],
+    ["t + allowances (t_m)", c.tm, "mm"],
+    ["Min. specified thickness t_min", c.tmin, "mm"],
+    [],
+    ["Note","This calc sheet was generated by a personal engineering tool. Verify all standards-derived inputs (S, E, W, Y) against the licensed ASME B31.3-2024 edition before use in any formal deliverable."],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(tbRows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Calc Sheet");
+  const fname = (document.getElementById('tb-doc').value || 'pipe_thickness_calc') + '.xlsx';
+  XLSX.writeFile(wb, fname);
+}
+
+/* ---------------- init ---------------- */
+renderMaterialTable();
+renderMaterialSelect();
+document.getElementById('tb-date').valueAsDate = new Date();
+</script>
+</body>
+</html>

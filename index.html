@@ -148,7 +148,7 @@ footer.legal{margin-top:30px;font-size:11px;color:#8A97A0;line-height:1.6;border
 
     <div class="danger" id="global-data-warning">
       <div>⚠</div>
-      <div><b>Data integrity notice.</b> This tool does not embed ASME B31.3 Table A-1 (allowable stress values). You must enter allowable stress (S) values yourself, sourced directly from your licensed ASME B31.3-2024 copy, in the Material Database below. Joint factor (E), weld strength reduction factor (W), and the Y-coefficient are pre-filled with commonly published reference values as a starting point only — verify every one against Tables A-1B, 302.3.5, and 304.1.1 in your copy before relying on any result for a real deliverable.</div>
+      <div><b>Data integrity notice.</b> The S-Tables for the materials below marked with a "Table A-1, Line ##, p.###" reference were transcribed directly from the ASME B31.3-2024 Table A-1 pages you supplied — spot-check a few values against your own copy before relying on this for a real deliverable, since any manual transcription can contain an error. Two rows (Duplex 2205 / A671-A672) are still empty placeholders — see their Reference cell for what's needed. Joint factor (E), weld strength reduction factor (W), and the Y-coefficient are pre-filled with commonly published reference values as a starting point only — verify every one against Tables A-1B, 302.3.5, and 304.1.1 in your copy.</div>
     </div>
 
     <!-- MATERIAL DATABASE -->
@@ -161,17 +161,17 @@ footer.legal{margin-top:30px;font-size:11px;color:#8A97A0;line-height:1.6;border
         </div>
       </div>
       <div class="card-body">
-        <p class="hint">Pre-loaded with common refinery pipe specs by name only. <b>Allowable stress (S) and reference cells are intentionally blank</b> — enter the value for your design temperature directly from Table A-1, plus the table/line/page reference for traceability. Rows highlighted red are missing required data and cannot be used in a calculation.</p>
+        <p class="hint">Materials with a source citation were extracted directly from the ASME B31.3-2024 Table A-1 pages you supplied (Basic Allowable Stresses in Tension — SI Units), with the source Line No. and page cited in the Reference column. The S-Table column holds the full temperature-dependent stress curve as it appears in the standard; the calculator linearly interpolates between tabulated points for design temperatures that fall between two entries — only the interpolation method is added, not the tabulated values themselves. Rows with an empty S-Table are placeholders — add data or supply the relevant standard page to populate them.</p>
         <div style="overflow-x:auto;">
         <table class="data" id="material-table">
           <thead><tr>
-            <th style="width:16%">Spec / Grade</th>
-            <th style="width:18%">Description</th>
-            <th style="width:10%">Form</th>
-            <th style="width:10%">Design Temp (°C)</th>
-            <th style="width:10%">Allow. Stress S (MPa)</th>
-            <th style="width:16%">Reference (Table/Line/Pg)</th>
-            <th style="width:6%">Nom. OD table</th>
+            <th style="width:13%">Spec / Grade</th>
+            <th style="width:16%">Description</th>
+            <th style="width:9%">Form</th>
+            <th style="width:8%">Min °C</th>
+            <th style="width:8%">Max °C</th>
+            <th style="width:24%">S-Table (°C:MPa, comma-sep.)</th>
+            <th style="width:16%">Reference</th>
             <th style="width:4%"></th>
           </tr></thead>
           <tbody id="material-tbody"></tbody>
@@ -268,19 +268,61 @@ const toC   = (v,u)=>u==='F'? (v-32)*5/9 : v;
 const fmt = n => (Math.round(n*1000)/1000).toString();
 
 /* ---------------- Material DB (localStorage-backed) ---------------- */
+// S-tables below are transcribed directly from the ASME B31.3-2024 Table A-1 pages supplied by the user
+// (Basic Allowable Stresses in Tension for Metals — SI Units). Each entry cites the exact Line No. and
+// page so it can be cross-checked against the source. Nothing here is estimated or interpolated in advance —
+// interpolation between points happens at calculation time only.
 const DEFAULT_MATERIALS = [
- {spec:"ASTM A106 Gr. B", desc:"Carbon steel, seamless", form:"Seamless", temp:"", s:"", ref:"", odref:"ASME B36.10"},
- {spec:"ASTM A53 Gr. B", desc:"Carbon steel, smls/ERW", form:"Smls / ERW", temp:"", s:"", ref:"", odref:"ASME B36.10"},
- {spec:"API 5L Gr. B", desc:"Line pipe, carbon steel", form:"Smls / Welded", temp:"", s:"", ref:"", odref:"ASME B36.10"},
- {spec:"API 5L X52", desc:"Line pipe, HSLA", form:"Smls / Welded", temp:"", s:"", ref:"", odref:"ASME B36.10"},
- {spec:"ASTM A333 Gr. 6", desc:"Low-temp carbon steel", form:"Seamless", temp:"", s:"", ref:"", odref:"ASME B36.10"},
- {spec:"ASTM A335 P11", desc:"1.25Cr-0.5Mo alloy steel", form:"Seamless", temp:"", s:"", ref:"", odref:"ASME B36.10"},
- {spec:"ASTM A335 P22", desc:"2.25Cr-1Mo alloy steel", form:"Seamless", temp:"", s:"", ref:"", odref:"ASME B36.10"},
- {spec:"ASTM A335 P91", desc:"9Cr-1Mo-V alloy steel", form:"Seamless", temp:"", s:"", ref:"", odref:"ASME B36.10"},
- {spec:"ASTM A312 TP304/304L", desc:"Austenitic stainless", form:"Seamless / Welded", temp:"", s:"", ref:"", odref:"ASME B36.19"},
- {spec:"ASTM A312 TP316/316L", desc:"Austenitic stainless, Mo", form:"Seamless / Welded", temp:"", s:"", ref:"", odref:"ASME B36.19"},
- {spec:"ASTM A790 UNS S31803", desc:"Duplex stainless (2205)", form:"Seamless / Welded", temp:"", s:"", ref:"", odref:"ASME B36.19"},
- {spec:"ASTM A671/A672", desc:"EFW pipe, large OD", form:"Welded", temp:"", s:"", ref:"", odref:"Mfr. spec"},
+ {spec:"ASTM A106 Gr. B", desc:"Carbon steel pipe & tube, seamless", form:"Seamless", minTemp:"Note B (impact test governs)", maxTemp:593,
+  s:"40:138,65:138,100:138,150:138,200:138,250:132,300:126,325:122,350:118,375:113,400:95.1,425:79.5,450:62.6,475:45.0,500:31.7,525:21.4,550:14.2,575:9.40,600:6.89",
+  ref:"Table A-1, Line 33, p.176-177"},
+ {spec:"ASTM A53 Gr. B", desc:"Carbon steel pipe, smls. or wld.", form:"Seamless / Welded", minTemp:"Note B (impact test governs)", maxTemp:593,
+  s:"40:138,65:138,100:138,150:138,200:138,250:132,300:126,325:122,350:118,375:113,400:95.1,425:79.5,450:62.6,475:45.0,500:31.7,525:21.4,550:14.2,575:9.40,600:6.89",
+  ref:"Table A-1, Lines 31-32, p.176-177"},
+ {spec:"API 5L Gr. B", desc:"Line pipe, carbon steel, PSL1", form:"Seamless / Welded", minTemp:"Note B", maxTemp:593,
+  s:"40:138,65:138,100:138,150:138,200:138,250:132,300:126,325:122,350:118,375:113,400:95.1,425:79.5,450:62.6,475:45.0,500:31.7,525:21.4,550:14.2,575:9.40,600:6.89",
+  ref:"Table A-1, Line 39, p.178-179"},
+ {spec:"API 5L X52 (L360 PSL1)", desc:"Line pipe, HSLA", form:"Seamless / Welded", minTemp:"Note A", maxTemp:260,
+  s:"40:153,65:153,100:153,150:153,200:153,250:153,300:153",
+  ref:"Table A-1, Line 59, p.178-179 — table stops at 300°C; material Max Temp = 260°C, do not exceed"},
+ {spec:"ASTM A333 Gr. 6", desc:"Low-temperature carbon steel pipe & tube", form:"Seamless", minTemp:-46, maxTemp:593,
+  s:"40:138,65:138,100:138,150:138,200:138,250:132,300:126,325:122,350:118,375:113,400:95.1,425:79.5,450:62.6,475:45.0,500:31.7,525:21.4,550:14.2,575:9.40,600:6.89",
+  ref:"Table A-1, Line 34, p.176-177"},
+ {spec:"ASTM A335 P11", desc:"1.25Cr-0.5Mo-Si alloy steel pipe", form:"Seamless", minTemp:-29, maxTemp:649,
+  s:"40:138,65:131,100:126,125:124,150:121,175:119,200:116,225:115,250:113,275:111,300:109,325:107,350:106,375:104,400:102,425:99.6,450:97.2,475:94.5,500:73.7,525:52.0,550:36.3,575:25.2,600:17.6,625:12.3,650:8.27",
+  ref:"Table A-1, Line 17, p.186-187"},
+ {spec:"ASTM A335 P22", desc:"2.25Cr-1Mo alloy steel pipe", form:"Seamless", minTemp:-29, maxTemp:649,
+  s:"40:138,65:132,100:128,125:126,150:125,175:124,200:124,225:124,250:124,275:124,300:124,325:124,350:124,375:124,400:123,425:122,450:121,475:99.6,500:80.9,525:63.3,550:47.5,575:34.2,600:23.5,625:15.3,650:9.65",
+  ref:"Table A-1, Line 33, p.186-187"},
+ {spec:"ASTM A335 P91", desc:"9Cr-1Mo-V alloy steel pipe (size ≤75mm, P-No.15E)", form:"Seamless", minTemp:-29, maxTemp:649,
+  s:"40:195,65:195,100:195,125:195,150:195,175:195,200:195,225:195,250:194,275:193,300:192,325:190,350:187,375:183,400:178,425:172,450:165,475:156,500:147,525:137,550:115,575:87.0,600:64.7,625:45.1,650:29.6",
+  ref:"Table A-1, Line 52, p.188-189 — verify size ≤75mm applies to your pipe"},
+ {spec:"ASTM A312 TP304", desc:"18Cr-8Ni austenitic stainless, smls./wld. pipe", form:"Seamless / Welded", minTemp:-254, maxTemp:816,
+  s:"40:138,65:138,100:138,125:138,150:138,175:134,200:129,225:125,250:122,275:119,300:116,325:113,350:111,375:109,400:107,425:105,450:103,475:101,500:99.1,525:97.3,550:95.5,575:78.9,600:63.8,625:51.6,650:41.6,675:32.9,700:26.5,725:21.3,750:17.2,775:14.1,800:11.2,825:9.65",
+  ref:"Table A-1, Line 86, p.202-205"},
+ {spec:"ASTM A312 TP304L", desc:"18Cr-8Ni austenitic stainless, low-carbon, smls./wld. pipe", form:"Seamless / Welded", minTemp:-254, maxTemp:816,
+  s:"40:115,65:115,100:115,125:115,150:115,175:114,200:110,225:106,250:103,275:99.9,300:97.7,325:95.7,350:94.1,375:92.6,400:91.3,425:90.0,450:88.7,475:87.3,500:85.6,525:83.7,550:81.4,575:40.4,600:33.2,625:26.7,650:21.9,675:18.2,700:15.0,725:12.4,750:8.87,775:7.20,800:6.58,825:6.21",
+  ref:"Table A-1, Line 6, p.194-197"},
+ {spec:"ASTM A312 TP316", desc:"16Cr-12Ni-2Mo austenitic stainless, smls./wld. pipe", form:"Seamless / Welded", minTemp:-254, maxTemp:816,
+  s:"40:138,65:138,100:138,125:138,150:138,175:138,200:134,225:129,250:125,275:122,300:119,325:116,350:114,375:112,400:111,425:110,450:109,475:108,500:107,525:106,550:105,575:97.8,600:80.8,625:65.0,650:50.4,675:38.6,700:29.6,725:23.0,750:17.4,775:13.3,800:10.4,825:8.96",
+  ref:"Table A-1, Line 63, p.198-201"},
+ {spec:"ASTM A312 TP316L", desc:"16Cr-12Ni-2Mo austenitic stainless, low-carbon, smls./wld. pipe", form:"Seamless / Welded", minTemp:-254, maxTemp:816,
+  s:"40:115,65:115,100:115,125:115,150:115,175:113,200:109,225:106,250:103,275:100,300:98.1,325:96.1,350:94.3,375:92.6,400:90.9,425:89.3,450:87.6,475:85.9,500:84.2,525:82.5,550:80.8,575:79.3,600:77.9,625:58.0,650:43.6,675:33.0,700:25.3,725:18.8,750:14.0,775:10.4,800:7.99,825:6.89",
+  ref:"Table A-1, Line 11, p.194-197"},
+ {spec:"ASTM A312 TP321 (>9.5mm wall)", desc:"18Cr-10Ni-Ti stabilized austenitic stainless, smls. pipe", form:"Seamless", minTemp:-254, maxTemp:816,
+  s:"40:115,65:115,100:115,125:115,150:115,175:115,200:115,225:115,250:112,275:109,300:106,325:104,350:102,375:100,400:99.0,425:97.0,450:96.3,475:95.3,500:94.4,525:93.6,550:88.7,575:59.2,600:44.0,625:32.9,650:24.5,675:18.3,700:12.5,725:8.49,750:6.19,775:4.28,800:2.75,825:1.74",
+  ref:"Table A-1, Line 1, p.194-197 — applies to wall thickness >9.5mm only, check thinner-wall line if applicable"},
+ {spec:"ASTM A312 TP347", desc:"18Cr-10Ni-Cb stabilized austenitic stainless, smls./wld. pipe", form:"Seamless / Welded", minTemp:-254, maxTemp:816,
+  s:"40:138,65:138,100:138,125:138,150:138,175:138,200:138,225:138,250:138,275:137,300:135,325:132,350:130,375:128,400:127,425:126,450:126,475:125,500:125,525:125,550:97.6,575:75.9,600:57.2,625:40.2,650:30.3,675:23.2,700:16.2,725:11.4,750:8.97,775:7.08,800:5.89,825:5.52",
+  ref:"Table A-1, Line 39, p.198-201"},
+ {spec:"ASTM A790 UNS S32304 (Duplex 2304)", desc:"23Cr-4Ni-Mo-Cu-N duplex stainless, smls./wld. pipe", form:"Seamless / Welded", minTemp:-51, maxTemp:316,
+  s:"40:200,65:200,100:191,125:185,150:180,175:175,200:171,225:166,250:161,275:153,300:143,325:111",
+  ref:"Table A-1, Line 100, p.202-205 — NOTE: this is Duplex 2304, NOT 2205 (S31803). No 2205 data was in the supplied pages."},
+ {spec:"ASTM A790 UNS S31803 (Duplex 2205)", desc:"22Cr-5Ni-3Mo-N duplex stainless — DATA NOT YET SUPPLIED", form:"Seamless / Welded", minTemp:"", maxTemp:"",
+  s:"", ref:"Not found in uploaded pages — supply the Table A-1 page covering S31803 to populate"},
+ {spec:"ASTM A672 Gr. C70", desc:"EFW large-OD carbon steel pipe — common refinery process/utility headers", form:"Welded", minTemp:"Note B", maxTemp:593,
+  s:"40:161,65:161,100:159,150:154,200:150,250:144,300:136,325:132,350:128,375:122,400:101,425:83.8,450:67.1,475:51.0,500:33.6,525:21.3,550:12.9,575:9.40,600:6.89",
+  ref:"Table A-1, Line 64, p.176-177 (A672 Gr. C70)"},
 ];
 
 function loadDB(){
@@ -300,17 +342,44 @@ function renderMaterialTable(){
       <td><input value="${m.spec}" onchange="updMat(${i},'spec',this.value)"></td>
       <td><input value="${m.desc}" onchange="updMat(${i},'desc',this.value)"></td>
       <td><input value="${m.form}" onchange="updMat(${i},'form',this.value)"></td>
-      <td><input value="${m.temp}" type="number" placeholder="°C" onchange="updMat(${i},'temp',this.value)"></td>
-      <td><input class="${missing(m.s)?'empty':''}" value="${m.s}" type="number" placeholder="enter S" onchange="updMat(${i},'s',this.value)"></td>
-      <td><input class="${missing(m.ref)?'empty':''}" value="${m.ref}" placeholder="Table A-1, p.__" onchange="updMat(${i},'ref',this.value)"></td>
-      <td><input value="${m.odref}" onchange="updMat(${i},'odref',this.value)"></td>
+      <td><input value="${m.minTemp}" placeholder="°C" onchange="updMat(${i},'minTemp',this.value)"></td>
+      <td><input value="${m.maxTemp}" placeholder="°C" onchange="updMat(${i},'maxTemp',this.value)"></td>
+      <td><input class="${missing(m.s)?'empty':''}" value="${m.s}" placeholder="40:138,65:138,..." onchange="updMat(${i},'s',this.value)" style="font-size:11px;"></td>
+      <td><input class="${missing(m.ref)?'empty':''}" value="${m.ref}" placeholder="Table A-1, Line __, p.__" onchange="updMat(${i},'ref',this.value)" style="font-size:11px;"></td>
       <td><button class="del-btn" onclick="delMat(${i})">✕</button></td>`;
     tbody.appendChild(tr);
   });
 }
 function updMat(i,key,val){ materials[i][key]=val; saveDB(); renderMaterialTable(); }
 function delMat(i){ materials.splice(i,1); saveDB(); renderMaterialTable(); }
-function addMaterialRow(){ materials.push({spec:"New material",desc:"",form:"",temp:"",s:"",ref:"",odref:""}); saveDB(); renderMaterialTable(); }
+function addMaterialRow(){ materials.push({spec:"New material",desc:"",form:"",minTemp:"",maxTemp:"",s:"",ref:""}); saveDB(); renderMaterialTable(); }
+
+// Parses an "40:138,65:138,..." string into a sorted array of [tempC, S] pairs.
+function parseSTable(str){
+  if(!str) return [];
+  return str.split(',').map(pair=>{
+    const [t,v] = pair.split(':').map(x=>parseFloat(x.trim()));
+    return [t,v];
+  }).filter(p=>!isNaN(p[0])&&!isNaN(p[1])).sort((a,b)=>a[0]-b[0]);
+}
+
+// Linear interpolation between tabulated Table A-1 points — the interpolation method is standard
+// engineering practice for values falling between listed temperatures; the points themselves are
+// exactly as tabulated (see each material's Reference field for source Line/page).
+function interpolateS(sTableStr, tempC){
+  const pts = parseSTable(sTableStr);
+  if(pts.length===0) return {error:'no-data'};
+  if(tempC < pts[0][0]) return {error:'below-min', bound:pts[0][0]};
+  if(tempC > pts[pts.length-1][0]) return {error:'above-max', bound:pts[pts.length-1][0]};
+  for(let k=0;k<pts.length;k++){
+    if(pts[k][0]===tempC) return {value:pts[k][1], exact:true};
+    if(pts[k][0]>tempC){
+      const [t0,s0]=pts[k-1], [t1,s1]=pts[k];
+      const s = s0 + (s1-s0)*(tempC-t0)/(t1-t0);
+      return {value:s, exact:false, t0,s0,t1,s1};
+    }
+  }
+}
 
 function renderMaterialSelect(){
   const sel = document.getElementById('in-material');
@@ -324,11 +393,21 @@ function onMaterialChange(){
   const m = materials[i];
   const echo = document.getElementById('material-s-echo');
   if(!m){ echo.textContent=''; return; }
-  if(m.s===''||m.s===null){
-    echo.innerHTML = `<span style="color:#B5432E;">No S value entered for this material — fill it in the Material Database above (row for ${m.spec}) before calculating.</span>`;
-  } else {
-    echo.textContent = `S = ${m.s} MPa @ ${m.temp||'—'}°C · Ref: ${m.ref||'not recorded'}`;
+  if(!m.s){
+    echo.innerHTML = `<span style="color:#B5432E;">No S-table entered for this material — fill it in the Material Database above (row for ${m.spec}) before calculating.</span>`;
+    return;
   }
+  const tempField = document.getElementById('in-temp');
+  const tempC = toC(parseFloat(tempField.value), document.getElementById('in-temp-unit').value);
+  if(isNaN(tempC)){
+    echo.textContent = `Range: ${m.minTemp}°C to ${m.maxTemp}°C · Ref: ${m.ref||'not recorded'} — enter a design temperature to preview S.`;
+    return;
+  }
+  const r = interpolateS(m.s, tempC);
+  if(r.error==='no-data'){ echo.innerHTML = `<span style="color:#B5432E;">S-table is empty.</span>`; }
+  else if(r.error==='below-min'){ echo.innerHTML = `<span style="color:#B5432E;">Design temp is below the lowest tabulated point (${r.bound}°C) for this material.</span>`; }
+  else if(r.error==='above-max'){ echo.innerHTML = `<span style="color:#B5432E;">Design temp exceeds the highest tabulated point (${r.bound}°C) — beyond the material's rated range.</span>`; }
+  else { echo.textContent = `S ${r.exact?'=':'(interpolated) ≈'} ${fmt(r.value)} MPa @ ${fmt(tempC)}°C · Ref: ${m.ref||'not recorded'}`; }
 }
 
 function onJointChange(){
@@ -356,16 +435,28 @@ function runCalc(){
   const mi = document.getElementById('in-material').value;
   const m = materials[mi];
 
-  if(!m || m.s===''||m.s===null||isNaN(parseFloat(m.s))){
-    warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>Cannot calculate.</b> The selected material has no allowable stress (S) value. Enter it in the Material Database (Section A) from Table A-1 of your ASME B31.3-2024 copy, then recalculate.</div></div>`;
+  if(!m || !m.s){
+    warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>Cannot calculate.</b> The selected material has no S-table entered. Populate it in the Material Database (Section A) from Table A-1 of your ASME B31.3-2024 copy, then recalculate.</div></div>`;
     document.getElementById('results-card').style.display='none';
     return;
   }
 
-  const S = parseFloat(m.s);
   const P = toMPa(parseFloat(document.getElementById('in-press').value), document.getElementById('in-press-unit').value);
   const OD = toMM(parseFloat(document.getElementById('in-od').value), document.getElementById('in-od-unit').value);
   const tempC = toC(parseFloat(document.getElementById('in-temp').value), document.getElementById('in-temp-unit').value);
+
+  const sLookup = interpolateS(m.s, tempC);
+  if(sLookup.error){
+    const msg = sLookup.error==='below-min'
+      ? `Design temperature is below the lowest tabulated point (${sLookup.bound}°C) in this material's S-table.`
+      : sLookup.error==='above-max'
+      ? `Design temperature (${fmt(tempC)}°C) exceeds the highest tabulated point (${sLookup.bound}°C) for this material — it is outside the rated range. Do not proceed without re-checking material selection.`
+      : `S-table has no usable data points.`;
+    warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>Cannot calculate.</b> ${msg}</div></div>`;
+    document.getElementById('results-card').style.display='none';
+    return;
+  }
+  const S = sLookup.value;
   const jointSel = document.getElementById('in-joint').value;
   const E = jointSel==='custom' ? parseFloat(document.getElementById('in-joint-custom').value) : parseFloat(jointSel);
   const W = parseFloat(document.getElementById('in-w').value);
@@ -400,12 +491,16 @@ function runCalc(){
   document.getElementById('res-tm').innerHTML = fmt(tm)+'<span class="u">mm</span>';
   document.getElementById('res-tmin').innerHTML = fmt(tmin)+'<span class="u">mm</span>';
 
+  const sLine = sLookup.exact
+    ? `S  (allowable stress)       = ${fmt(S)} MPa   [exact table value @ ${fmt(tempC)}°C — Ref: ${m.ref||'NOT RECORDED'}]`
+    : `S  (allowable stress)       = ${fmt(S)} MPa   [interpolated between ${sLookup.t0}°C:${sLookup.s0}MPa and ${sLookup.t1}°C:${sLookup.s1}MPa — Ref: ${m.ref||'NOT RECORDED'}]`;
+
   document.getElementById('calc-steps').innerHTML =
 `<span class="eq">Eq. 3a (ASME B31.3 §304.1.2a):</span>  t = P·D / [2(S·E·W + P·Y)]
 
   P  (design pressure)        = ${fmt(P)} MPa
   D  (outside diameter)       = ${fmt(OD)} mm
-  S  (allowable stress)       = ${fmt(S)} MPa   [Ref: ${m.ref||'NOT RECORDED — verify'}]
+  ${sLine}
   E  (quality factor)         = ${fmt(E)}
   W  (weld strength factor)   = ${fmt(W)}
   Y  (coefficient @ ${fmt(tempC)}°C)     = ${fmt(Y)}   [suggested — verify vs Table 304.1.1]
@@ -430,7 +525,7 @@ function runCalc(){
 
 /* ---------------- Excel export ---------------- */
 function exportDB(){
-  const rows = materials.map(m=>({Spec:m.spec,Description:m.desc,Form:m.form,"Design Temp (C)":m.temp,"Allowable Stress S (MPa)":m.s,Reference:m.ref,"OD Std":m.odref}));
+  const rows = materials.map(m=>({Spec:m.spec,Description:m.desc,Form:m.form,"Min Temp (C)":m.minTemp,"Max Temp (C)":m.maxTemp,"S-Table (C:MPa)":m.s,Reference:m.ref}));
   const ws = XLSX.utils.json_to_sheet(rows);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Material DB");

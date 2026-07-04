@@ -138,6 +138,18 @@ table.sch th{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;co
 table.sch td{padding:6px 8px;border-bottom:1px solid #EEF0EF;font-family:var(--mono);}
 table.sch tr.selected td{background:#EAF0F3;font-weight:600;}
 table.sch tr.selected td:first-child{border-left:3px solid var(--steel);}
+
+/* ---- mode tabs ---- */
+.mode-tabs{display:flex;gap:2px;margin-bottom:-1px;position:relative;z-index:1;}
+.mode-tab{font-family:var(--cond);font-weight:700;font-size:13.5px;padding:10px 18px;background:#EAEDEC;border:1px solid var(--line);border-bottom:none;border-radius:4px 4px 0 0;color:#5C6B74;cursor:pointer;}
+.mode-tab.active{background:var(--panel);color:var(--ink);border-bottom:1px solid var(--panel);}
+.mode-tab:hover:not(.active){background:#F4F5F3;color:var(--ink);}
+
+table.sch tr.bstatus-ok td{color:var(--teal);}
+table.sch tr.bstatus-fail td{color:var(--rust);}
+table.sch tr.bstatus-warn td{color:var(--amber-dk);}
+.file-ok{color:var(--teal);font-weight:600;}
+.file-err{color:var(--rust);font-weight:600;}
 </style>
 </head>
 <body>
@@ -188,9 +200,15 @@ table.sch tr.selected td:first-child{border-left:3px solid var(--steel);}
       <div><b>Data integrity notice.</b> Allowable stress (S) values were transcribed from the ASME B31.3-2024 pages you supplied — spot-check before relying on this for a real deliverable. Joint factor (E), weld strength factor (W), Y-coefficient, and standard pipe Schedule dimensions are pre-filled reference values — verify against Tables A-1B / 302.3.5 / 304.1.1 and ASME B36.10M/B36.19M in your copy. Open <b>Material Database</b> above to review sources or add data.</div>
     </div>
 
-    <!-- CALCULATION INPUTS -->
-    <section class="card">
-      <div class="card-h"><h3><span class="idx">A.</span>Calculation Inputs</h3></div>
+    <!-- MODE TABS -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tab-single" onclick="switchMode('single')">Single Line (manual)</button>
+      <button class="mode-tab" id="tab-batch" onclick="switchMode('batch')">Batch Import (Line List / PMS)</button>
+    </div>
+
+    <!-- CALCULATION INPUTS : SINGLE LINE -->
+    <section class="card" id="panel-single">
+      <div class="card-h"><h3><span class="idx">A.</span>Calculation Inputs — Single Line</h3></div>
       <div class="card-body">
         <div class="grid2">
           <div class="field">
@@ -219,14 +237,17 @@ table.sch tr.selected td:first-child{border-left:3px solid var(--steel);}
             <label>Joint Type → Quality Factor E</label>
             <select id="in-joint" onchange="onJointChange()">
               <option value="1.00">Seamless — E = 1.00</option>
-              <option value="0.95">Double-welded (EFW/SAW), 100% RT — E = 0.95</option>
-              <option value="0.90">Electric Resistance Weld (ERW) — E = 0.85–1.00</option>
-              <option value="0.85">Double-welded, spot RT — E = 0.85</option>
-              <option value="0.65">Single-welded, no RT — E = 0.65</option>
+              <option value="1.00-efw">EFW, double-welded, 100% RT — E = 1.00</option>
+              <option value="0.90">EFW, double-welded, spot RT — E = 0.90</option>
+              <option value="0.80">EFW, double-welded, no RT — E = 0.80</option>
+              <option value="0.90-s">EFW, single-welded, 100% RT — E = 0.90</option>
+              <option value="0.85-s">EFW, single-welded, spot RT — E = 0.85</option>
+              <option value="0.85">ERW (fixed — not increased by extra NDE) — E = 0.85</option>
               <option value="0.60">Furnace butt-welded — E = 0.60</option>
               <option value="custom">Custom / from Table A-1B…</option>
             </select>
             <input id="in-joint-custom" type="number" step="0.01" placeholder="E value" style="margin-top:6px;display:none;">
+            <div class="sub">Values per Table A-1B / §302.3.4 as commonly published — ERW is a fixed factor and cannot be increased by additional examination. Cross-check exact line/page against your licensed copy.</div>
           </div>
           <div class="field">
             <label>Weld Strength Reduction Factor W</label>
@@ -254,6 +275,74 @@ table.sch tr.selected td:first-child{border-left:3px solid var(--steel);}
       </div>
     </section>
 
+    <!-- BATCH IMPORT PANEL -->
+    <section class="card" id="panel-batch" style="display:none;">
+      <div class="card-h"><h3><span class="idx">A.</span>Batch Calculation — Line List Import</h3></div>
+      <div class="card-body">
+        <p class="hint">Use this mode to calculate wall thickness for every line in a Line List in one pass. Each line's material can come either directly from a <b>Material Spec/Grade</b> column in the Line List itself, or — if the Line List only carries a <b>Piping Class</b> code — from a <b>PMS (Piping Material Specification)</b> file that maps Class → Material/Corrosion Allowance/Joint Type. Both files must follow the column templates below (fixed headers so the parser can read them reliably).</p>
+
+        <div class="warn"><div>⚠</div><div>Every material referenced by the Line List or PMS must already exist in the <b>Material Database</b> (Section above the calculator) with a populated S-table, using the <i>exact same</i> Spec/Grade text. Add missing materials there before running a batch.</div></div>
+
+        <div class="grid2" style="margin-top:6px;">
+          <div class="field">
+            <label>Step 1 — Templates</label>
+            <div style="display:flex;gap:8px;flex-wrap:wrap;">
+              <button class="small-btn" onclick="downloadLineListTemplate()">⬇ Line List template (.xlsx)</button>
+              <button class="small-btn" onclick="downloadPmsTemplate()">⬇ PMS template (.xlsx)</button>
+            </div>
+            <div class="sub">Download, fill in your project data following the column headers exactly (an Instructions tab and example row are included), then upload below.</div>
+          </div>
+          <div class="field">
+            <label>Step 2 — Upload Line List <span class="req">*</span></label>
+            <input type="file" id="in-linelist-file" accept=".xlsx,.xls" onchange="onLineListFileChosen(event)">
+            <div class="sub" id="linelist-file-status">No file loaded.</div>
+          </div>
+          <div class="field">
+            <label>Step 2b — Upload PMS (optional — only if Line List uses Piping Class codes)</label>
+            <input type="file" id="in-pms-file" accept=".xlsx,.xls" onchange="onPmsFileChosen(event)">
+            <div class="sub" id="pms-file-status">No file loaded. Not required if the Line List already states Material Spec/Grade per line.</div>
+          </div>
+        </div>
+
+        <div class="field" style="margin-top:4px;">
+          <label>Step 3 — Project-wide fallback defaults</label>
+          <div class="sub" style="margin-bottom:8px;">Used only for a line/class that doesn't specify its own value. Per-line values in the Line List (or PMS) always take priority over these.</div>
+          <div class="grid2">
+            <div class="field">
+              <label>Default Joint Type / E (if not given per line or via PMS)</label>
+              <select id="batch-default-joint">
+                <option value="1.00">Seamless — E = 1.00</option>
+                <option value="1.00-efw">EFW, double-welded, 100% RT — E = 1.00</option>
+                <option value="0.90">EFW, double-welded, spot RT — E = 0.90</option>
+                <option value="0.80">EFW, double-welded, no RT — E = 0.80</option>
+                <option value="0.85">ERW (fixed) — E = 0.85</option>
+                <option value="0.60">Furnace butt-welded — E = 0.60</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Default W (weld strength reduction)</label>
+              <input id="batch-default-w" type="number" step="0.01" value="1.00">
+            </div>
+            <div class="field">
+              <label>Default Corrosion Allowance, c (mm)</label>
+              <input id="batch-default-corr" type="number" step="0.1" value="3.0">
+            </div>
+            <div class="field">
+              <label>Default Mechanical Allowance (mm)</label>
+              <input id="batch-default-mech" type="number" step="0.1" value="0">
+            </div>
+            <div class="field">
+              <label>Default Mill Undertolerance (%)</label>
+              <input id="batch-default-mill" type="number" step="0.1" value="12.5">
+            </div>
+          </div>
+        </div>
+
+        <button class="calc-btn" onclick="runBatchCalc()">Calculate all lines</button>
+        <div id="batch-warning"></div>
+      </div>
+    </section>
+
     <!-- RESULTS -->
     <section class="card" id="results-card" style="display:none;">
       <div class="card-h"><h3><span class="idx">B.</span>Results</h3>
@@ -271,6 +360,17 @@ table.sch tr.selected td:first-child{border-left:3px solid var(--steel);}
         <div style="overflow-x:auto;"><table class="sch" id="sch-table"></table></div>
       </div>
       <div class="steps" id="calc-steps"></div>
+    </section>
+
+    <!-- BATCH RESULTS -->
+    <section class="card" id="batch-results-card" style="display:none;">
+      <div class="card-h"><h3><span class="idx">B.</span>Batch Results</h3>
+        <button class="small-btn" onclick="exportBatchCalc()">Export calc register (.xlsx)</button>
+      </div>
+      <div class="card-body">
+        <div id="batch-summary" style="margin-bottom:12px;"></div>
+        <div style="overflow-x:auto;"><table class="sch" id="batch-results-table"></table></div>
+      </div>
     </section>
 
     <!-- MATERIAL DATABASE MODAL -->
@@ -543,15 +643,73 @@ function onJointChange(){
 }
 
 /* ---------------- Y-coefficient lookup (editable reference set) ---------------- */
-// Commonly published starting values per ASME B31.3 Table 304.1.1 logic (ferritic/austenitic steels, t<D/6).
-// MUST be verified against the user's licensed copy — see global warning banner.
+// Commonly published values per ASME B31.3 Table 304.1.1, valid only for t < D/6.
+// Four material groups x 6 temperature breakpoints (482/510/538/566/593/621 degC).
+// MUST be verified line-by-line against the user's licensed 2024 edition — see global warning banner.
+const Y_TABLE = {
+  ferritic:  [[482,0.4],[510,0.5],[538,0.7],[566,0.7],[593,0.7],[621,0.7]],
+  austenitic:[[482,0.4],[510,0.4],[538,0.4],[566,0.4],[593,0.5],[621,0.7]],
+  otherDuctile:[[482,0.4],[510,0.4],[538,0.4],[566,0.4],[593,0.4],[621,0.4]],
+  castIron:  [[482,0.0]]
+};
+function guessMaterialGroup(materialDesc){
+  const d = (materialDesc||'').toLowerCase();
+  if(/cast iron|gray iron|malleable|ductile iron/.test(d)) return 'castIron';
+  if(/austenitic|stainless|tp3|tp1|duplex|s3\d{4}/.test(d)) return 'austenitic';
+  if(/aluminum|copper|nickel alloy|titanium|zirconium|brass|bronze/.test(d)) return 'otherDuctile';
+  return 'ferritic';
+}
 function suggestY(tempC, materialDesc){
-  const isAustenitic = /austenitic|stainless|tp304|tp316|duplex/i.test(materialDesc||'');
-  const brackets = isAustenitic
-    ? [[482,0.4],[510,0.4],[538,0.4],[566,0.4],[593,0.5],[649,0.7]]
-    : [[482,0.4],[510,0.5],[538,0.7],[566,0.7]];
-  for(const [t,y] of brackets){ if(tempC<=t) return y; }
-  return 0.7;
+  const group = guessMaterialGroup(materialDesc);
+  const brackets = Y_TABLE[group];
+  for(const [t,y] of brackets){ if(tempC<=t) return {value:y, group}; }
+  return {value:brackets[brackets.length-1][1], group};
+}
+
+/* ---------------- Reusable schedule matching (used by single-line + batch) ---------------- */
+function matchScheduleRow(OD){
+  return PIPE_SCHEDULES.find(p=>Math.abs(p.od-OD)<0.5) || null;
+}
+function chooseLightestSchedule(rowMatch, tmin){
+  if(!rowMatch || Object.keys(rowMatch.wt).length===0) return null;
+  const entries = Object.entries(rowMatch.wt).sort((a,b)=>a[1]-b[1]);
+  for(const [sch,wt] of entries){ if(wt>=tmin) return {sch, wt, marginPct:(wt-tmin)/tmin*100}; }
+  return {sch:null, wt:null, marginPct:null}; // no schedule in chart meets tmin
+}
+
+/* ---------------- Core thickness calculation (Eq. 3a) — shared by single-line + batch ---------------- */
+// Returns {error} on failure, or a full result object on success.
+function computeCore({m, P, OD, tempC, E, W, c, mech, millPct}){
+  if(!m || !m.s) return {error:'no-material', message:'Selected/matched material has no S-table entered in the Material Database.'};
+  if([P,OD,tempC,E,W,c,millPct].some(v=>isNaN(v)) || !OD || !P) return {error:'bad-input', message:'Missing or invalid input (pressure, OD, temperature, joint factor, mill tolerance).'};
+
+  const sLookup = interpolateS(m.s, tempC);
+  if(sLookup.error){
+    const msg = sLookup.error==='below-min'
+      ? `Design temperature is below the lowest tabulated point (${sLookup.bound}°C) in this material's S-table.`
+      : sLookup.error==='above-max'
+      ? `Design temperature (${fmt(tempC)}°C) exceeds the highest tabulated point (${sLookup.bound}°C) — outside the material's rated range.`
+      : `S-table has no usable data points.`;
+    return {error:'s-lookup', message:msg};
+  }
+  const S = sLookup.value;
+  const Yr = suggestY(tempC, m.desc + ' ' + m.spec);
+  const Y = Yr.value;
+
+  const ratioCheck = P / (S*E) > 0.385;
+  if(ratioCheck){
+    return {error:'thick-wall', message:`Thick-wall regime (P/SE = ${(P/(S*E)).toFixed(4)} > 0.385) — Eq. 3a not valid, §304.1.2(b) thick-wall equation required (not implemented).`};
+  }
+
+  const t = (P*OD) / (2*(S*E*W + P*Y));
+  const tm = t + c + mech;
+  const tmin = tm / (1 - millPct/100);
+  const thinWallOK = t < OD/6;
+
+  const rowMatch = matchScheduleRow(OD);
+  const scheduleChoice = chooseLightestSchedule(rowMatch, tmin);
+
+  return {S, E, W, Y, YGroup:Yr.group, sLookup, t, tm, tmin, thinWallOK, ratioCheck, rowMatch, scheduleChoice};
 }
 
 /* ---------------- Main calculation ---------------- */
@@ -561,28 +719,9 @@ function runCalc(){
   const mi = document.getElementById('in-material').value;
   const m = materials[mi];
 
-  if(!m || !m.s){
-    warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>Cannot calculate.</b> The selected material has no S-table entered. Populate it in the Material Database (Section A) from Table A-1 of your ASME B31.3-2024 copy, then recalculate.</div></div>`;
-    document.getElementById('results-card').style.display='none';
-    return;
-  }
-
   const P = toMPa(parseFloat(document.getElementById('in-press').value), document.getElementById('in-press-unit').value);
   const OD = toMM(parseFloat(document.getElementById('in-od').value), document.getElementById('in-od-unit').value);
   const tempC = toC(parseFloat(document.getElementById('in-temp').value), document.getElementById('in-temp-unit').value);
-
-  const sLookup = interpolateS(m.s, tempC);
-  if(sLookup.error){
-    const msg = sLookup.error==='below-min'
-      ? `Design temperature is below the lowest tabulated point (${sLookup.bound}°C) in this material's S-table.`
-      : sLookup.error==='above-max'
-      ? `Design temperature (${fmt(tempC)}°C) exceeds the highest tabulated point (${sLookup.bound}°C) for this material — it is outside the rated range. Do not proceed without re-checking material selection.`
-      : `S-table has no usable data points.`;
-    warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>Cannot calculate.</b> ${msg}</div></div>`;
-    document.getElementById('results-card').style.display='none';
-    return;
-  }
-  const S = sLookup.value;
   const jointSel = document.getElementById('in-joint').value;
   const E = jointSel==='custom' ? parseFloat(document.getElementById('in-joint-custom').value) : parseFloat(jointSel);
   const W = parseFloat(document.getElementById('in-w').value);
@@ -590,28 +729,15 @@ function runCalc(){
   const mech = toMM(parseFloat(document.getElementById('in-mech').value), document.getElementById('in-mech-unit').value);
   const millPct = parseFloat(document.getElementById('in-mill').value);
 
-  if([P,OD,tempC,E,W,c].some(v=>isNaN(v)) || !OD || !P){
-    warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>Missing or invalid input.</b> Check pressure, OD, temperature, and joint factor fields.</div></div>`;
+  const r = computeCore({m, P, OD, tempC, E, W, c, mech, millPct});
+  if(r.error){
+    const label = r.error==='no-material' ? 'Cannot calculate.' : r.error==='thick-wall' ? 'Thick-wall regime detected.' : 'Cannot calculate.';
+    warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>${label}</b> ${r.message}</div></div>`;
     document.getElementById('results-card').style.display='none';
     return;
   }
 
-  const Y = suggestY(tempC, m.desc + ' ' + m.spec);
-
-  // Thick-wall applicability check per §304.1.2
-  const ratioCheck = P / (S*E) > 0.385;
-  if(ratioCheck){
-    warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>Thick-wall regime detected (P/SE &gt; 0.385).</b> The thin-wall formula (Eq. 3a) used by this module is not valid here. ASME B31.3 §304.1.2(b) requires the thick-wall equation instead. This module does not implement it — perform this calculation manually or extend the tool before proceeding.</div></div>`;
-    document.getElementById('results-card').style.display='none';
-    return;
-  }
-
-  const t = (P*OD) / (2*(S*E*W + P*Y));           // Eq 3a, pressure design thickness
-  const tm = t + c + mech;                          // + allowances
-  const tmin = tm / (1 - millPct/100);               // required specified (nominal before mill tol.) thickness
-
-  // thin-wall validity self-check
-  const thinWallOK = t < OD/6;
+  const {S,Y,YGroup,sLookup,t,tm,tmin,thinWallOK,ratioCheck} = r;
 
   document.getElementById('res-t').innerHTML = fmt(t)+'<span class="u">mm</span>';
   document.getElementById('res-tm').innerHTML = fmt(tm)+'<span class="u">mm</span>';
@@ -634,7 +760,7 @@ function runCalc(){
   ${sLine}
   E  (quality factor)         = ${fmt(E)}
   W  (weld strength factor)   = ${fmt(W)}
-  Y  (coefficient @ ${fmt(tempC)}°C)     = ${fmt(Y)}   [suggested — verify vs Table 304.1.1]
+  Y  (coefficient @ ${fmt(tempC)}°C, group: ${YGroup})     = ${fmt(Y)}   [Table 304.1.1 — verify against your licensed copy]
 
   t   = (${fmt(P)} × ${fmt(OD)}) / [2 × (${fmt(S)} × ${fmt(E)} × ${fmt(W)} + ${fmt(P)} × ${fmt(Y)})]
       = ${fmt(t)} mm
@@ -651,6 +777,7 @@ function runCalc(){
   P/SE = ${(P/(S*E)).toFixed(4)}  (must be ≤ 0.385 for Eq. 3a — ${ratioCheck? 'FAILED':'OK'})`;
 
   document.getElementById('results-card').style.display = 'block';
+  document.getElementById('batch-results-card').style.display = 'none';
   window._lastCalc = {m,S,P,OD,tempC,E,W,Y,c,mech,millPct,t,tm,tmin};
 }
 
@@ -703,6 +830,311 @@ function exportCalc(){
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Calc Sheet");
   const fname = (document.getElementById('tb-doc').value || 'pipe_thickness_calc') + '.xlsx';
+  XLSX.writeFile(wb, fname);
+}
+
+/* ================================================================
+   BATCH MODE — Line List / PMS import, multi-line calculation
+   ================================================================ */
+
+function switchMode(mode){
+  document.getElementById('tab-single').classList.toggle('active', mode==='single');
+  document.getElementById('tab-batch').classList.toggle('active', mode==='batch');
+  document.getElementById('panel-single').style.display = mode==='single' ? 'block' : 'none';
+  document.getElementById('panel-batch').style.display = mode==='batch' ? 'block' : 'none';
+  document.getElementById('results-card').style.display='none';
+  document.getElementById('batch-results-card').style.display='none';
+}
+
+const LINE_LIST_HEADERS = ["Line No / Tag","NPS","Custom OD (mm)","Piping Class","Material Spec/Grade",
+  "Design Pressure","Pressure Unit","Design Temperature","Temperature Unit",
+  "Joint Type E Override","W Override","Corrosion Allowance Override (mm)",
+  "Mechanical Allowance Override (mm)","Mill Undertolerance Override (%)","Remarks"];
+
+const PMS_HEADERS = ["Piping Class","Material Spec/Grade","Joint Type E","W",
+  "Corrosion Allowance (mm)","Mechanical Allowance (mm)","Mill Undertolerance (%)","Rating Class","Remarks"];
+
+function downloadLineListTemplate(){
+  const example1 = ["6-P-1042-B3C1","6","","B1C3(N)","","4.2","MPa","350","C","","","","","",""];
+  const example2 = ["2-P-1043-N1F1","2","","N1F1","ASTM A106 Gr. B","9.7","bar","45","C","","","","","",""];
+  const ws = XLSX.utils.aoa_to_sheet([LINE_LIST_HEADERS, example1, example2]);
+  const instr = XLSX.utils.aoa_to_sheet([
+    ["Line List template — instructions"],
+    [""],
+    ["Do not rename, reorder, or delete the header row (row 1) of the 'Line List' sheet — the parser reads columns by header text."],
+    [""],
+    ["Line No / Tag — your line number / tag, for traceability in the output register only."],
+    ["NPS — nominal pipe size as text, matching this tool's schedule chart, e.g. 1/2, 3/4, 1, 1 1/4, 1 1/2, 2, 2 1/2, 3, 4, 6, 8, or 10/12/14/16/18/20/24 (OD reference only, no schedule match above NPS 8)."],
+    ["Custom OD (mm) — leave blank to use NPS lookup. Fill in to override with a non-standard OD (e.g. for a size marked HOLD in your Line List)."],
+    ["Piping Class — the project piping class code (e.g. B1C3(N)). Only used if 'Material Spec/Grade' is left blank and a PMS file is uploaded."],
+    ["Material Spec/Grade — fill this directly to skip the PMS lookup entirely. Text must exactly match a 'Spec / Grade' entry in this tool's Material Database (Material Database button, top of page)."],
+    ["Design Pressure / Pressure Unit — e.g. 4.2 / MPa. Units: MPa, bar, psi, kPa."],
+    ["Design Temperature / Temperature Unit — e.g. 350 / C. Units: C or F."],
+    ["Joint Type E Override — optional. Leave blank to take the value from the PMS (if used) or the project default set in Step 3."],
+    ["W Override — optional weld strength reduction factor override. Leave blank for PMS/default."],
+    ["Corrosion / Mechanical Allowance / Mill Undertolerance Overrides — optional, same logic: blank = PMS value = project default."],
+    ["Remarks — free text, carried through to the output register only."],
+    [""],
+    ["Any line that cannot be resolved (missing material, unknown NPS, temperature outside the material's S-table range, or falling into the thick-wall regime) will be flagged in the batch results table and calc register instead of silently skipped."]
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Line List");
+  XLSX.utils.book_append_sheet(wb, instr, "Instructions");
+  XLSX.writeFile(wb, "mechtoolkit_line_list_template.xlsx");
+}
+
+function downloadPmsTemplate(){
+  const example1 = ["B1C3(N)","ASTM A106 Gr. B","1.00","1.00","3.0","0","12.5","#300",""];
+  const example2 = ["N1F1","ASTM A312 TP316L","1.00","1.00","1.5","0","12.5","#150",""];
+  const ws = XLSX.utils.aoa_to_sheet([PMS_HEADERS, example1, example2]);
+  const instr = XLSX.utils.aoa_to_sheet([
+    ["PMS (Piping Material Specification) template — instructions"],
+    [""],
+    ["Only needed if your Line List identifies lines by Piping Class code rather than stating the Material Spec/Grade directly."],
+    ["Do not rename, reorder, or delete the header row (row 1) of the 'PMS' sheet."],
+    [""],
+    ["Piping Class — must exactly match the 'Piping Class' text used in the Line List."],
+    ["Material Spec/Grade — must exactly match a 'Spec / Grade' entry in this tool's Material Database."],
+    ["Joint Type E — the class default joint quality factor E (e.g. 1.00 seamless, 0.85 ERW, per Table A-1B/302.3.4)."],
+    ["W — the class default weld strength reduction factor (usually 1.00 unless the class governs creep-range service, per Table 302.3.5)."],
+    ["Corrosion Allowance (mm) / Mechanical Allowance (mm) / Mill Undertolerance (%) — class defaults; can still be overridden per line in the Line List."],
+    ["Rating Class — informational only (e.g. #150/#300), not used in the thickness calculation."],
+    ["Remarks — free text, not used in the calculation."]
+  ]);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "PMS");
+  XLSX.utils.book_append_sheet(wb, instr, "Instructions");
+  XLSX.writeFile(wb, "mechtoolkit_pms_template.xlsx");
+}
+
+let batchLineListRows = null;
+let batchPmsRows = null;
+
+// Locate the first sheet in a workbook whose header row contains requiredHeader, and return its rows as objects.
+function findSheetRows(wb, requiredHeader){
+  for(const name of wb.SheetNames){
+    const ws = wb.Sheets[name];
+    const raw = XLSX.utils.sheet_to_json(ws, {header:1, defval:''});
+    if(raw.length && raw[0].map(String).includes(requiredHeader)){
+      return XLSX.utils.sheet_to_json(ws, {defval:''});
+    }
+  }
+  return null;
+}
+
+function onLineListFileChosen(event){
+  const file = event.target.files[0];
+  const status = document.getElementById('linelist-file-status');
+  if(!file){ status.innerHTML = 'No file loaded.'; status.className='sub'; batchLineListRows=null; return; }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      const rows = findSheetRows(wb, "Line No / Tag");
+      if(!rows){ status.innerHTML = `<span class="file-err">Could not find a sheet with the expected "Line No / Tag" header. Use the template above.</span>`; batchLineListRows=null; return; }
+      batchLineListRows = rows;
+      status.innerHTML = `<span class="file-ok">✓ Loaded ${rows.length} line(s) from "${file.name}".</span>`;
+    }catch(err){
+      status.innerHTML = `<span class="file-err">Could not read file: ${err.message}</span>`;
+      batchLineListRows = null;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function onPmsFileChosen(event){
+  const file = event.target.files[0];
+  const status = document.getElementById('pms-file-status');
+  if(!file){ status.innerHTML = 'No file loaded.'; status.className='sub'; batchPmsRows=null; return; }
+  const reader = new FileReader();
+  reader.onload = function(e){
+    try{
+      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array'});
+      const rows = findSheetRows(wb, "Piping Class");
+      if(!rows){ status.innerHTML = `<span class="file-err">Could not find a sheet with the expected "Piping Class" header. Use the template above.</span>`; batchPmsRows=null; return; }
+      batchPmsRows = rows;
+      status.innerHTML = `<span class="file-ok">✓ Loaded ${rows.length} class(es) from "${file.name}".</span>`;
+    }catch(err){
+      status.innerHTML = `<span class="file-err">Could not read file: ${err.message}</span>`;
+      batchPmsRows = null;
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function resolveODForRow(row){
+  const customOD = parseFloat(row['Custom OD (mm)']);
+  if(!isNaN(customOD) && customOD>0) return {OD:customOD, label:fmt(customOD)+' mm (custom)'};
+  const npsRaw = (row['NPS']||'').toString().trim().replace(/["']/g,'');
+  if(!npsRaw) return {error:'No NPS or Custom OD given.'};
+  let found = PIPE_SCHEDULES.find(p=>p.nps.replace(/["']/g,'').trim().toLowerCase()===npsRaw.toLowerCase());
+  if(!found) found = PIPE_SCHEDULES.find(p=>p.nps.toLowerCase().startsWith(npsRaw.toLowerCase()+' '));
+  if(!found) return {error:`NPS "${npsRaw}" not recognized — use Custom OD (mm) for non-standard/HOLD sizes.`};
+  return {OD:found.od, label:'NPS '+found.nps};
+}
+
+function findMaterialBySpec(specText){
+  const s = (specText||'').toString().trim().toLowerCase();
+  if(!s) return -1;
+  return materials.findIndex(m=>m.spec.trim().toLowerCase()===s);
+}
+
+function resolveMaterialForRow(row, pmsMap){
+  const directSpec = (row['Material Spec/Grade']||'').toString().trim();
+  if(directSpec){
+    const idx = findMaterialBySpec(directSpec);
+    if(idx<0) return {error:`Material "${directSpec}" not found in Material Database — add it first.`};
+    return {idx, source:'Line List (direct)'};
+  }
+  const cls = (row['Piping Class']||'').toString().trim();
+  if(!cls) return {error:'No Material Spec/Grade and no Piping Class given.'};
+  if(!pmsMap) return {error:`Line uses Piping Class "${cls}" but no PMS file was uploaded.`};
+  const pmsRow = pmsMap[cls.toLowerCase()];
+  if(!pmsRow) return {error:`Piping Class "${cls}" not found in the uploaded PMS.`};
+  const spec = (pmsRow['Material Spec/Grade']||'').toString().trim();
+  const idx = findMaterialBySpec(spec);
+  if(idx<0) return {error:`PMS maps class "${cls}" to material "${spec}", which is not found in the Material Database — add it first.`};
+  return {idx, source:`PMS (class ${cls})`, pmsRow};
+}
+
+function num(v){ const n = parseFloat(v); return isNaN(n) ? null : n; }
+
+function runBatchCalc(){
+  const warnBox = document.getElementById('batch-warning');
+  warnBox.innerHTML = '';
+  if(!batchLineListRows || !batchLineListRows.length){
+    warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>No Line List loaded.</b> Upload a Line List file following the template before running a batch calculation.</div></div>`;
+    return;
+  }
+  let pmsMap = null;
+  if(batchPmsRows && batchPmsRows.length){
+    pmsMap = {};
+    batchPmsRows.forEach(r=>{ const cls=(r['Piping Class']||'').toString().trim().toLowerCase(); if(cls) pmsMap[cls]=r; });
+  }
+
+  const defJointSel = document.getElementById('batch-default-joint').value;
+  const defE = parseFloat(defJointSel);
+  const defW = parseFloat(document.getElementById('batch-default-w').value);
+  const defCorr = parseFloat(document.getElementById('batch-default-corr').value);
+  const defMech = parseFloat(document.getElementById('batch-default-mech').value);
+  const defMill = parseFloat(document.getElementById('batch-default-mill').value);
+
+  const results = [];
+  batchLineListRows.forEach((row,i)=>{
+    const lineTag = row['Line No / Tag'] || `(row ${i+2})`;
+    const rec = {lineTag, raw:row};
+
+    const matRes = resolveMaterialForRow(row, pmsMap);
+    if(matRes.error){ rec.status='ERROR'; rec.message=matRes.error; results.push(rec); return; }
+    const m = materials[matRes.idx];
+    rec.material = m.spec;
+    rec.materialSource = matRes.source;
+
+    const odRes = resolveODForRow(row);
+    if(odRes.error){ rec.status='ERROR'; rec.message=odRes.error; results.push(rec); return; }
+    const OD = odRes.OD;
+    rec.odLabel = odRes.label;
+
+    const P = toMPa(num(row['Design Pressure']), (row['Pressure Unit']||'MPa').toString().trim());
+    const tempC = toC(num(row['Design Temperature']), (row['Temperature Unit']||'C').toString().trim());
+    if(P===null || isNaN(P) || tempC===null || isNaN(tempC)){
+      rec.status='ERROR'; rec.message='Missing/invalid Design Pressure or Design Temperature.'; results.push(rec); return;
+    }
+
+    const pmsRow = matRes.pmsRow;
+    const E = num(row['Joint Type E Override']) ?? (pmsRow ? num(pmsRow['Joint Type E']) : null) ?? defE;
+    const W = num(row['W Override']) ?? (pmsRow ? num(pmsRow['W']) : null) ?? defW;
+    const c = num(row['Corrosion Allowance Override (mm)']) ?? (pmsRow ? num(pmsRow['Corrosion Allowance (mm)']) : null) ?? defCorr;
+    const mech = num(row['Mechanical Allowance Override (mm)']) ?? (pmsRow ? num(pmsRow['Mechanical Allowance (mm)']) : null) ?? defMech;
+    const millPct = num(row['Mill Undertolerance Override (%)']) ?? (pmsRow ? num(pmsRow['Mill Undertolerance (%)']) : null) ?? defMill;
+
+    const r = computeCore({m, P, OD, tempC, E, W, c, mech, millPct});
+    if(r.error){ rec.status = r.error==='thick-wall' ? 'FAIL' : 'ERROR'; rec.message=r.message; rec.P=P; rec.OD=OD; rec.tempC=tempC; results.push(rec); return; }
+
+    Object.assign(rec, {P,OD,tempC,E,W,c,mech,millPct,S:r.S,Y:r.Y,t:r.t,tm:r.tm,tmin:r.tmin,thinWallOK:r.thinWallOK,sRef:m.ref||'NOT RECORDED'});
+    if(r.scheduleChoice && r.scheduleChoice.sch){
+      rec.schedule = r.scheduleChoice.sch; rec.scheduleWT = r.scheduleChoice.wt;
+    } else if(r.rowMatch){
+      rec.schedule = 'none in chart ≥ t_min'; rec.scheduleWT = null;
+    } else {
+      rec.schedule = 'manual (no chart for this OD)'; rec.scheduleWT = null;
+    }
+    rec.status = r.thinWallOK ? 'OK' : 'WARN';
+    results.push(rec);
+  });
+
+  window._lastBatch = results;
+  renderBatchResults(results);
+}
+
+function renderBatchResults(results){
+  const ok = results.filter(r=>r.status==='OK').length;
+  const warn = results.filter(r=>r.status==='WARN').length;
+  const fail = results.filter(r=>r.status==='FAIL' || r.status==='ERROR').length;
+  document.getElementById('batch-summary').innerHTML =
+    `<span class="badge pass">${ok} OK</span> &nbsp;<span class="badge info">${warn} WARN</span> &nbsp;<span class="badge fail">${fail} ERROR/FAIL</span> &nbsp; <span style="color:#8A97A0;font-family:var(--mono);font-size:12px;">of ${results.length} line(s)</span>`;
+
+  const rows = results.map(r=>{
+    const cls = r.status==='OK' ? 'bstatus-ok' : (r.status==='WARN' ? 'bstatus-warn' : 'bstatus-fail');
+    const badge = r.status==='OK' ? '<span class="badge pass">OK</span>'
+                : r.status==='WARN' ? '<span class="badge info">WARN</span>'
+                : '<span class="badge fail">'+r.status+'</span>';
+    if(r.message){
+      return `<tr class="${cls}"><td>${r.lineTag}</td><td colspan="9">${r.message}</td><td>${badge}</td></tr>`;
+    }
+    return `<tr class="${cls}">
+      <td>${r.lineTag}</td>
+      <td>${r.material}</td>
+      <td>${r.odLabel}</td>
+      <td>${fmt(r.P)} MPa / ${fmt(r.tempC)}°C</td>
+      <td>${fmt(r.S)}</td>
+      <td>${fmt(r.E)}</td>
+      <td>${fmt(r.t)}</td>
+      <td>${fmt(r.tm)}</td>
+      <td><b>${fmt(r.tmin)}</b></td>
+      <td>${r.schedule}</td>
+      <td>${badge}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('batch-results-table').innerHTML =
+    `<tr><th>Line No / Tag</th><th>Material</th><th>Size</th><th>P / T (design)</th><th>S (MPa)</th><th>E</th><th>t (mm)</th><th>t_m (mm)</th><th>t_min (mm)</th><th>Schedule</th><th>Status</th></tr>${rows}`;
+
+  document.getElementById('results-card').style.display='none';
+  document.getElementById('batch-results-card').style.display='block';
+}
+
+function exportBatchCalc(){
+  if(!window._lastBatch || !window._lastBatch.length){ alert('Run a batch calculation first.'); return; }
+  const header = ["Line No / Tag","Material","Material Source","Size / OD (mm)","Design Pressure (MPa)","Design Temp (°C)",
+    "S (MPa)","S Reference","E","W","Y","Corrosion Allow. (mm)","Mech. Allow. (mm)","Mill Undertol. (%)",
+    "t — pressure design thickness (mm)","t_m — t + allowances (mm)","t_min — min. specified thickness (mm)",
+    "Nearest Schedule","Thin-wall OK?","Status","Notes"];
+  const rows = window._lastBatch.map(r=>{
+    if(r.message){
+      return [r.lineTag, r.material||'', r.materialSource||'', '', r.P??'', r.tempC??'', '', '', '', '', '', '', '', '', '', '', '', '', '', r.status, r.message];
+    }
+    return [r.lineTag, r.material, r.materialSource, fmt(r.OD), fmt(r.P), fmt(r.tempC),
+      fmt(r.S), r.sRef, fmt(r.E), fmt(r.W), fmt(r.Y), fmt(r.c), fmt(r.mech), fmt(r.millPct),
+      fmt(r.t), fmt(r.tm), fmt(r.tmin), r.schedule, r.thinWallOK?'Yes':'No — check thick-wall', r.status, ''];
+  });
+  const tbRows = [
+    ["Project", document.getElementById('tb-project').value],
+    ["Doc No.", document.getElementById('tb-doc').value],
+    ["Revision", document.getElementById('tb-rev').value],
+    ["Date", document.getElementById('tb-date').value],
+    ["Prepared by", document.getElementById('tb-by').value],
+    ["Checked by", document.getElementById('tb-checked').value],
+    ["Standard", "ASME B31.3-2024, Eq. 3a (§304.1.2a) — batch register"],
+    [],
+    header,
+    ...rows,
+    [],
+    ["Note","This register was generated by a personal engineering tool (batch mode). Verify all standards-derived inputs (S, E, W, Y) and every ERROR/FAIL/WARN line against the licensed ASME B31.3-2024 edition and project PMS before use in any formal deliverable."],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(tbRows);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Calc Register");
+  const fname = (document.getElementById('tb-doc').value || 'pipe_thickness_batch_calc') + '.xlsx';
   XLSX.writeFile(wb, fname);
 }
 

@@ -105,6 +105,39 @@ table.data tr:hover td{background:#FAFBFA;}
 .status-fail{color:var(--rust);font-weight:600;}
 
 footer.legal{margin-top:30px;font-size:11px;color:#8A97A0;line-height:1.6;border-top:1px solid var(--line);padding-top:14px;}
+
+/* ---- top bar / db button ---- */
+.topbar{display:flex;justify-content:flex-end;margin-bottom:14px;}
+.topbar .small-btn{display:flex;align-items:center;gap:6px;}
+
+/* ---- modal ---- */
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(20,32,43,.55);z-index:50;align-items:flex-start;justify-content:center;padding:40px 24px;overflow-y:auto;}
+.modal-overlay.open{display:flex;}
+.modal-box{background:var(--panel);width:100%;max-width:1100px;border-radius:4px;box-shadow:0 20px 60px rgba(0,0,0,.35);}
+.modal-box .card-h{border-radius:4px 4px 0 0;}
+.modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:#7C8A93;padding:2px 8px;}
+.modal-close:hover{color:var(--ink);}
+
+/* ---- result card v2 ---- */
+.result-hero{background:var(--ink);color:#fff;padding:22px 24px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;}
+.result-hero .metric{flex:1;min-width:150px;}
+.result-hero .metric .lab{font-family:var(--mono);font-size:10px;color:#8FA0AC;letter-spacing:.08em;text-transform:uppercase;}
+.result-hero .metric .val{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--amber);margin-top:4px;}
+.result-hero .metric .val .u{font-size:13px;color:#DDE3E7;font-weight:400;margin-left:4px;}
+.result-hero .metric.hero .val{color:#fff;font-size:32px;}
+
+.badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;}
+.badge.pass{background:rgba(62,124,110,.15);color:var(--teal);border:1px solid rgba(62,124,110,.4);}
+.badge.fail{background:rgba(181,67,46,.15);color:var(--rust);border:1px solid rgba(181,67,46,.4);}
+.badge.info{background:rgba(62,107,138,.15);color:var(--steel-dk);border:1px solid rgba(62,107,138,.4);}
+
+.sch-panel{padding:18px;border-top:1px solid var(--line);}
+.sch-panel h4{font-family:var(--cond);font-size:14px;margin:0 0 10px;}
+table.sch{width:100%;border-collapse:collapse;font-size:12.5px;}
+table.sch th{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;color:#7C8A93;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);}
+table.sch td{padding:6px 8px;border-bottom:1px solid #EEF0EF;font-family:var(--mono);}
+table.sch tr.selected td{background:#EAF0F3;font-weight:600;}
+table.sch tr.selected td:first-child{border-left:3px solid var(--steel);}
 </style>
 </head>
 <body>
@@ -146,43 +179,18 @@ footer.legal{margin-top:30px;font-size:11px;color:#8A97A0;line-height:1.6;border
       </div>
     </div>
 
-    <div class="danger" id="global-data-warning">
-      <div>⚠</div>
-      <div><b>Data integrity notice.</b> The S-Tables for the materials below marked with a "Table A-1, Line ##, p.###" reference were transcribed directly from the ASME B31.3-2024 Table A-1 pages you supplied — spot-check a few values against your own copy before relying on this for a real deliverable, since any manual transcription can contain an error. Two rows (Duplex 2205 / A671-A672) are still empty placeholders — see their Reference cell for what's needed. Joint factor (E), weld strength reduction factor (W), and the Y-coefficient are pre-filled with commonly published reference values as a starting point only — verify every one against Tables A-1B, 302.3.5, and 304.1.1 in your copy.</div>
+    <div class="topbar">
+      <button class="small-btn" onclick="openDbModal()">⚙ Material Database</button>
     </div>
 
-    <!-- MATERIAL DATABASE -->
-    <section class="card">
-      <div class="card-h">
-        <h3><span class="idx">A.</span>Material Database</h3>
-        <div style="display:flex;gap:8px;">
-          <button class="small-btn" onclick="addMaterialRow()">+ Add material</button>
-          <button class="small-btn" onclick="exportDB()">Export DB (.xlsx)</button>
-        </div>
-      </div>
-      <div class="card-body">
-        <p class="hint">Materials with a source citation were extracted directly from the ASME B31.3-2024 Table A-1 pages you supplied (Basic Allowable Stresses in Tension — SI Units), with the source Line No. and page cited in the Reference column. The S-Table column holds the full temperature-dependent stress curve as it appears in the standard; the calculator linearly interpolates between tabulated points for design temperatures that fall between two entries — only the interpolation method is added, not the tabulated values themselves. Rows with an empty S-Table are placeholders — add data or supply the relevant standard page to populate them.</p>
-        <div style="overflow-x:auto;">
-        <table class="data" id="material-table">
-          <thead><tr>
-            <th style="width:13%">Spec / Grade</th>
-            <th style="width:16%">Description</th>
-            <th style="width:9%">Form</th>
-            <th style="width:8%">Min °C</th>
-            <th style="width:8%">Max °C</th>
-            <th style="width:24%">S-Table (°C:MPa, comma-sep.)</th>
-            <th style="width:16%">Reference</th>
-            <th style="width:4%"></th>
-          </tr></thead>
-          <tbody id="material-tbody"></tbody>
-        </table>
-        </div>
-      </div>
-    </section>
+    <div class="danger" id="global-data-warning">
+      <div>⚠</div>
+      <div><b>Data integrity notice.</b> Allowable stress (S) values were transcribed from the ASME B31.3-2024 pages you supplied — spot-check before relying on this for a real deliverable. Joint factor (E), weld strength factor (W), Y-coefficient, and standard pipe Schedule dimensions are pre-filled reference values — verify against Tables A-1B / 302.3.5 / 304.1.1 and ASME B36.10M/B36.19M in your copy. Open <b>Material Database</b> above to review sources or add data.</div>
+    </div>
 
     <!-- CALCULATION INPUTS -->
     <section class="card">
-      <div class="card-h"><h3><span class="idx">B.</span>Calculation Inputs</h3></div>
+      <div class="card-h"><h3><span class="idx">A.</span>Calculation Inputs</h3></div>
       <div class="card-body">
         <div class="grid2">
           <div class="field">
@@ -192,11 +200,16 @@ footer.legal{margin-top:30px;font-size:11px;color:#8A97A0;line-height:1.6;border
           </div>
           <div class="field">
             <label>Design Temperature <span class="req">*</span></label>
-            <div class="unit-row"><input id="in-temp" type="number" placeholder="e.g. 350"><select id="in-temp-unit"><option value="C">°C</option><option value="F">°F</option></select></div>
+            <div class="unit-row"><input id="in-temp" type="number" placeholder="e.g. 350" oninput="onMaterialChange()"><select id="in-temp-unit" onchange="onMaterialChange()"><option value="C">°C</option><option value="F">°F</option></select></div>
           </div>
           <div class="field">
             <label>Design Pressure (internal) <span class="req">*</span></label>
             <div class="unit-row"><input id="in-press" type="number" placeholder="e.g. 4.2"><select id="in-press-unit"><option value="MPa">MPa</option><option value="bar">bar</option><option value="psi">psi</option><option value="kPa">kPa</option></select></div>
+          </div>
+          <div class="field">
+            <label>Nominal Pipe Size (NPS)</label>
+            <select id="in-nps" onchange="onNpsChange()"></select>
+            <div class="sub">Selecting an NPS fills the OD from ASME B36.10M/19M. Switch to "Custom OD" for non-standard pipe.</div>
           </div>
           <div class="field">
             <label>Outside Diameter (OD) <span class="req">*</span></label>
@@ -243,19 +256,57 @@ footer.legal{margin-top:30px;font-size:11px;color:#8A97A0;line-height:1.6;border
 
     <!-- RESULTS -->
     <section class="card" id="results-card" style="display:none;">
-      <div class="card-h"><h3><span class="idx">C.</span>Results</h3>
+      <div class="card-h"><h3><span class="idx">B.</span>Results</h3>
         <button class="small-btn" onclick="exportCalc()">Export calc sheet (.xlsx)</button>
       </div>
-      <div class="result-band">
-        <div class="r"><div class="lab">Pressure design thickness, t</div><div class="val" id="res-t">—<span class="u">mm</span></div></div>
-        <div class="r"><div class="lab">Min. required, t + allowances</div><div class="val" id="res-tm">—<span class="u">mm</span></div></div>
-        <div class="r"><div class="lab">Min. specified (incl. mill tol.), t<sub>min</sub></div><div class="val" id="res-tmin">—<span class="u">mm</span></div></div>
+      <div class="result-hero">
+        <div class="metric"><div class="lab">Pressure design thickness, t</div><div class="val" id="res-t">—<span class="u">mm</span></div></div>
+        <div class="metric"><div class="lab">t + allowances, t<sub>m</sub></div><div class="val" id="res-tm">—<span class="u">mm</span></div></div>
+        <div class="metric hero"><div class="lab">Min. specified, t<sub>min</sub></div><div class="val" id="res-tmin">—<span class="u">mm</span></div></div>
+        <div class="metric" style="flex:0 0 auto;"><div class="lab">Status</div><div style="margin-top:6px;" id="res-badge"></div></div>
+      </div>
+      <div class="sch-panel" id="sch-panel" style="display:none;">
+        <h4>Nearest Standard Schedule — ASME B36.10M / B36.19M</h4>
+        <p class="hint" style="margin-bottom:10px;">Dimensional data (OD/WT by NPS &amp; Schedule) is common public engineering reference data — still, cross-check against B36.10M/19M before issuing. Rows in bold/highlighted are schedules meeting or exceeding t<sub>min</sub>; the highlighted row is the lightest (most economical) adequate schedule.</p>
+        <div style="overflow-x:auto;"><table class="sch" id="sch-table"></table></div>
       </div>
       <div class="steps" id="calc-steps"></div>
     </section>
 
+    <!-- MATERIAL DATABASE MODAL -->
+    <div class="modal-overlay" id="db-modal">
+      <div class="modal-box">
+        <div class="card-h">
+          <h3>Material Database</h3>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="small-btn" onclick="addMaterialRow()">+ Add material</button>
+            <button class="small-btn" onclick="exportDB()">Export DB (.xlsx)</button>
+            <button class="modal-close" onclick="closeDbModal()">✕ Close</button>
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="hint">Materials with a source citation were extracted directly from the ASME B31.3-2024 Table A-1 pages you supplied (Basic Allowable Stresses in Tension — SI Units), with the source Line No. and page cited in the Reference column. The S-Table column holds the full temperature-dependent stress curve as it appears in the standard; the calculator linearly interpolates between tabulated points for design temperatures that fall between two entries — only the interpolation method is added, not the tabulated values themselves. Rows with an empty S-Table are placeholders — add data or supply the relevant standard page to populate them.</p>
+          <div style="overflow-x:auto;">
+          <table class="data" id="material-table">
+            <thead><tr>
+              <th style="width:13%">Spec / Grade</th>
+              <th style="width:16%">Description</th>
+              <th style="width:9%">Form</th>
+              <th style="width:8%">Min °C</th>
+              <th style="width:8%">Max °C</th>
+              <th style="width:24%">S-Table (°C:MPa, comma-sep.)</th>
+              <th style="width:16%">Reference</th>
+              <th style="width:4%"></th>
+            </tr></thead>
+            <tbody id="material-tbody"></tbody>
+          </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
     <footer class="legal">
-      <b>Scope &amp; limitations:</b> This module implements the thin-wall straight-pipe formula of ASME B31.3 §304.1.2(a), Eq. 3a (t = PD / 2(SEW+PY)). It does not implement the thick-wall equation §304.1.2(b) — the tool will flag and stop if your inputs fall into that regime. It does not cover bends, miters, branch reinforcement, or external pressure (collapse). This is a personal calculation aid; it is not a substitute for review and sign-off by a qualified engineer against the current, licensed edition of ASME B31.3, and applicable project specifications.
+      <b>Scope &amp; limitations:</b> This module implements the thin-wall straight-pipe formula of ASME B31.3 §304.1.2(a), Eq. 3a (t = PD / 2(SEW+PY)). It does not implement the thick-wall equation §304.1.2(b) — the tool will flag and stop if your inputs fall into that regime. It does not cover bends, miters, branch reinforcement, or external pressure (collapse). The Schedule-matching table covers NPS 1/2"–8" only; larger sizes show OD for reference but require manual schedule selection against ASME B36.10M/19M. This is a personal calculation aid; it is not a substitute for review and sign-off by a qualified engineer against the current, licensed edition of ASME B31.3, and applicable project specifications.
     </footer>
   </main>
 </div>
@@ -410,6 +461,81 @@ function onMaterialChange(){
   else { echo.textContent = `S ${r.exact?'=':'(interpolated) ≈'} ${fmt(r.value)} MPa @ ${fmt(tempC)}°C · Ref: ${m.ref||'not recorded'}`; }
 }
 
+/* ---------------- Modal ---------------- */
+function openDbModal(){ document.getElementById('db-modal').classList.add('open'); }
+function closeDbModal(){ document.getElementById('db-modal').classList.remove('open'); }
+document.getElementById('db-modal').addEventListener('click', function(e){ if(e.target===this) closeDbModal(); });
+
+/* ---------------- Standard pipe schedule data (ASME B36.10M / B36.19M) ----------------
+   Public dimensional standard data (OD/WT by NPS & Schedule) — not proprietary allowable-
+   stress content, but still verify against your copy of B36.10M/B36.19M before formal use.
+   Coverage intentionally limited to NPS 1/2"-8", where Schedule 40=STD and 80=XS coincide
+   exactly and these figures are unambiguous. Larger sizes are offered for OD only (schedule
+   numbers diverge from STD/XS above NPS 8" and are not asserted here without a source page). */
+const PIPE_SCHEDULES = [
+ {nps:'1/2', od:21.3,  wt:{'5':1.65,'10':2.11,'40 / STD':2.77,'80 / XS':3.73,'160':4.78,'XXS':7.47}},
+ {nps:'3/4', od:26.7,  wt:{'5':1.65,'10':2.11,'40 / STD':2.87,'80 / XS':3.91,'160':5.56,'XXS':7.82}},
+ {nps:'1',   od:33.4,  wt:{'5':1.65,'10':2.77,'40 / STD':3.38,'80 / XS':4.55,'160':6.35,'XXS':9.09}},
+ {nps:'1 1/4', od:42.2,wt:{'5':1.65,'10':2.77,'40 / STD':3.56,'80 / XS':4.85,'160':6.35,'XXS':9.70}},
+ {nps:'1 1/2', od:48.3,wt:{'5':1.65,'10':2.77,'40 / STD':3.68,'80 / XS':5.08,'160':7.14,'XXS':10.15}},
+ {nps:'2',   od:60.3,  wt:{'5':1.65,'10':2.77,'40 / STD':3.91,'80 / XS':5.54,'160':8.74,'XXS':11.07}},
+ {nps:'2 1/2', od:73.0,wt:{'5':2.11,'10':3.05,'40 / STD':5.16,'80 / XS':7.01,'160':9.53,'XXS':14.02}},
+ {nps:'3',   od:88.9,  wt:{'5':2.11,'10':3.05,'40 / STD':5.49,'80 / XS':7.62,'160':11.13,'XXS':15.24}},
+ {nps:'4',   od:114.3, wt:{'5':2.11,'10':3.05,'40 / STD':6.02,'80 / XS':8.56,'120':11.13,'160':13.49,'XXS':17.12}},
+ {nps:'6',   od:168.3, wt:{'5':2.11,'10':3.40,'40 / STD':7.11,'80 / XS':10.97,'120':14.27,'160':18.26,'XXS':21.95}},
+ {nps:'8',   od:219.1, wt:{'5':2.11,'10':3.76,'20':6.35,'30':7.04,'40 / STD':8.18,'60':10.31,'80 / XS':12.70,'100':15.09,'120':18.26,'140':20.62,'160':23.01}},
+ {nps:'10 (OD only)', od:273.0, wt:{}},
+ {nps:'12 (OD only)', od:323.8, wt:{}},
+ {nps:'14 (OD only)', od:355.6, wt:{}},
+ {nps:'16 (OD only)', od:406.4, wt:{}},
+ {nps:'18 (OD only)', od:457.2, wt:{}},
+ {nps:'20 (OD only)', od:508.0, wt:{}},
+ {nps:'24 (OD only)', od:609.6, wt:{}},
+];
+
+function renderNpsSelect(){
+  const sel = document.getElementById('in-nps');
+  sel.innerHTML = '<option value="">— Custom OD (enter manually) —</option>' +
+    PIPE_SCHEDULES.map((p,i)=>`<option value="${i}">NPS ${p.nps} — OD ${p.od} mm</option>`).join('');
+}
+function onNpsChange(){
+  const i = document.getElementById('in-nps').value;
+  if(i===''){ return; }
+  const p = PIPE_SCHEDULES[i];
+  document.getElementById('in-od').value = p.od;
+  document.getElementById('in-od-unit').value = 'mm';
+}
+
+// Given a required t_min and the OD actually entered, find the matching NPS row (if any) and
+// render a PASS/FAIL schedule table with the lightest adequate schedule highlighted.
+function renderSchedulePanel(OD, tmin){
+  const panel = document.getElementById('sch-panel');
+  const rowMatch = PIPE_SCHEDULES.find(p=>Math.abs(p.od-OD)<0.5);
+  if(!rowMatch || Object.keys(rowMatch.wt).length===0){
+    panel.style.display='block';
+    document.getElementById('sch-table').innerHTML = `<tr><td style="padding:8px;color:#8A97A0;">No schedule chart loaded for this OD (${fmt(OD)} mm). Covers NPS 1/2"–8" only — for larger sizes, select the schedule manually against ASME B36.10M/19M using t_min above.</td></tr>`;
+    return;
+  }
+  panel.style.display='block';
+  const entries = Object.entries(rowMatch.wt).sort((a,b)=>a[1]-b[1]);
+  let firstPass = true;
+  const rows = entries.map(([sch,wt])=>{
+    const passes = wt >= tmin;
+    const marginPct = ((wt-tmin)/tmin*100);
+    const isChosen = passes && firstPass;
+    if(passes) firstPass=false;
+    return `<tr class="${isChosen?'selected':''}">
+      <td>Sch ${sch}</td>
+      <td>${wt.toFixed(2)} mm</td>
+      <td>${passes?`<span class="badge pass">PASS</span>`:`<span class="badge fail">FAIL</span>`}</td>
+      <td>${passes? (marginPct>=0?'+':'')+marginPct.toFixed(1)+'%' : '—'}</td>
+      <td>${isChosen? '← lightest adequate schedule':''}</td>
+    </tr>`;
+  }).join('');
+  document.getElementById('sch-table').innerHTML =
+    `<tr><th>Schedule</th><th>Nominal WT</th><th>vs t_min</th><th>Margin</th><th></th></tr>${rows}`;
+}
+
 function onJointChange(){
   const v = document.getElementById('in-joint').value;
   const custom = document.getElementById('in-joint-custom');
@@ -490,6 +616,11 @@ function runCalc(){
   document.getElementById('res-t').innerHTML = fmt(t)+'<span class="u">mm</span>';
   document.getElementById('res-tm').innerHTML = fmt(tm)+'<span class="u">mm</span>';
   document.getElementById('res-tmin').innerHTML = fmt(tmin)+'<span class="u">mm</span>';
+  document.getElementById('res-badge').innerHTML = thinWallOK
+    ? `<span class="badge pass">✓ Thin-wall OK</span>`
+    : `<span class="badge fail">⚠ Near thick-wall limit</span>`;
+
+  renderSchedulePanel(OD, tmin);
 
   const sLine = sLookup.exact
     ? `S  (allowable stress)       = ${fmt(S)} MPa   [exact table value @ ${fmt(tempC)}°C — Ref: ${m.ref||'NOT RECORDED'}]`
@@ -578,6 +709,7 @@ function exportCalc(){
 /* ---------------- init ---------------- */
 renderMaterialTable();
 renderMaterialSelect();
+renderNpsSelect();
 document.getElementById('tb-date').valueAsDate = new Date();
 </script>
 </body>

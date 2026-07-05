@@ -14,6 +14,7 @@
   --panel:#FFFFFF;
   --panel-alt:#F7F8F7;
   --line:#DCE0E1;
+  --line-strong:#B7C1C5;
   --line-soft:#EAEDEC;
   --steel:#3E6B8A;
   --steel-dk:#2A4C63;
@@ -56,7 +57,15 @@ button,input,select{font-family:inherit;transition:border-color .15s ease, backg
 .sidebar .foot{padding:18px 22px 0;margin-top:18px;border-top:1px solid rgba(255,255,255,.10);font-size:10.5px;color:#617583;line-height:1.6;}
 
 /* ---- main ---- */
-main{padding:34px 42px 90px;max-width:1220px;}
+main{padding:34px 42px 90px;max-width:1440px;}
+
+/* ---- workspace: inputs (main) + persistent results (sticky side) ---- */
+.workspace{display:grid;grid-template-columns:1fr 400px;gap:24px;align-items:start;}
+.workspace.mode-batch{grid-template-columns:1fr;}
+.workspace.mode-batch .workspace-side{display:none;}
+.workspace-side{position:sticky;top:20px;}
+.results-placeholder{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:40px 24px;border:1.5px dashed var(--line-strong);border-radius:var(--radius);color:#8A97A0;font-size:12.5px;line-height:1.6;background:var(--panel-alt);}
+.results-placeholder .rp-icon{font-size:26px;opacity:.6;}
 .titleblock{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--steel);border-bottom:none;margin-bottom:0;border-radius:2px 2px 0 0;box-shadow:var(--shadow-card);}
 .tb-head{display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid var(--line);}
 .tb-head h2{font-family:var(--cond);font-size:20px;margin:0;font-weight:700;}
@@ -64,7 +73,7 @@ main{padding:34px 42px 90px;max-width:1220px;}
 .tb-grid{display:grid;grid-template-columns:repeat(4,1fr);}
 .tb-cell{padding:12px 18px;border-right:1px solid var(--line-soft);border-top:1px solid var(--line-soft);}
 .tb-cell:nth-child(4n){border-right:none;}
-.tb-cell label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;color:#8A97A0;text-transform:uppercase;margin-bottom:6px;}
+.tb-cell label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;color:#5C6B74;text-transform:uppercase;margin-bottom:6px;}
 .tb-cell input{width:100%;border:none;border-bottom:1px solid transparent;font-family:var(--sans);font-size:13.5px;padding:2px 0 4px;background:transparent;color:var(--ink);}
 .tb-cell input:focus{outline:none;border-bottom:1px solid var(--steel);}
 .tb-cell input::placeholder{color:#C3CACD;}
@@ -75,7 +84,7 @@ section.card.attached{margin-top:0;border-top:none;border-radius:0 0 var(--radiu
 .card-h h3{font-family:var(--cond);font-size:16.5px;margin:0;font-weight:700;display:flex;align-items:center;gap:9px;letter-spacing:.005em;}
 .card-h h3 .idx{font-family:var(--mono);color:var(--steel);font-size:13px;background:var(--steel-wash);padding:2px 7px;border-radius:3px;}
 .card-body{padding:20px 24px;}
-.hint{font-size:12.5px;color:#5C6B74;line-height:1.6;}
+.hint{font-size:12.5px;color:#48545C;line-height:1.6;}
 
 .warn{display:flex;gap:10px;background:var(--amber-wash);border:1px solid #EFD9A8;border-left:3px solid var(--amber-dk);border-radius:4px;padding:12px 15px;font-size:12.5px;color:#6B4E13;margin:14px 0;line-height:1.55;}
 .warn b{color:var(--amber-dk);}
@@ -91,22 +100,23 @@ table.data input.empty{background:var(--rust-wash);border-color:#E7BEB2;}
 table.data tr:hover td{background:var(--steel-wash);}
 .del-btn{background:none;border:none;color:#B0393A;cursor:pointer;font-size:16px;line-height:1;padding:3px 7px;border-radius:3px;}
 .del-btn:hover{background:var(--rust-wash);}
-.small-btn{font-family:var(--cond);font-weight:700;font-size:12.5px;padding:9px 16px;border-radius:4px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--steel-dk);letter-spacing:.01em;box-shadow:var(--shadow-card);}
+.small-btn{font-family:var(--cond);font-weight:700;font-size:12.5px;padding:9px 16px;border-radius:4px;border:1.5px solid var(--line-strong);background:#fff;cursor:pointer;color:var(--steel-dk);letter-spacing:.01em;box-shadow:var(--shadow-card);}
 .small-btn:hover{border-color:var(--steel);color:var(--ink);transform:translateY(-1px);}
 .small-btn:active{transform:translateY(0);}
 
 .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;}
 .field{margin-bottom:8px;}
-.field label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:#5C6B74;margin-bottom:5px;text-transform:uppercase;}
+.field label{display:block;font-family:var(--mono);font-size:11px;font-weight:600;letter-spacing:.05em;color:#3A464E;margin-bottom:5px;text-transform:uppercase;}
 .field label .req{color:var(--rust);}
-.field input,.field select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:4px;font-family:var(--mono);font-size:13.5px;background:#fff;color:var(--ink);}
+.field input,.field select{width:100%;padding:10px 12px;border:1.5px solid var(--line-strong);border-radius:4px;font-family:var(--mono);font-size:13.5px;background:#fff;color:var(--ink);}
 .field input:focus,.field select:focus{outline:none;border-color:var(--steel);box-shadow:0 0 0 3px rgba(62,107,138,.12);}
-.field .sub{font-size:11.5px;color:#8A97A0;margin-top:6px;line-height:1.5;}
+.field input[readonly]{background:var(--panel-alt);color:#4A565E;}
+.field .sub{font-size:11.5px;color:#6B7880;margin-top:6px;line-height:1.5;}
 .unit-row{display:flex;gap:0;}
 .unit-row input{border-top-right-radius:0;border-bottom-right-radius:0;flex:1;}
 .unit-row select{width:76px;border-top-left-radius:0;border-bottom-left-radius:0;border-left:none;}
 
-input[type=file]{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:4px;font-family:var(--sans);font-size:12.5px;background:#fff;color:#5C6B74;}
+input[type=file]{width:100%;padding:9px 10px;border:1.5px solid var(--line-strong);border-radius:4px;font-family:var(--sans);font-size:12.5px;background:#fff;color:#3A464E;}
 input[type=file]:hover{border-color:var(--steel);}
 input[type=file]::file-selector-button{font-family:var(--cond);font-weight:700;font-size:12px;padding:7px 14px;margin-right:12px;border:none;border-radius:4px;background:var(--steel-dk);color:#fff;cursor:pointer;}
 input[type=file]::file-selector-button:hover{background:var(--ink);}
@@ -142,13 +152,14 @@ footer.legal{margin-top:8px;font-size:11.5px;color:#8A97A0;line-height:1.65;bord
 .modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:#7C8A93;padding:4px 9px;border-radius:4px;}
 .modal-close:hover{color:var(--ink);background:var(--line-soft);}
 
-/* ---- result card v2 ---- */
-.result-hero{background:var(--ink);color:#fff;padding:24px 26px;display:flex;justify-content:space-between;align-items:flex-start;gap:22px;flex-wrap:wrap;}
-.result-hero .metric{flex:1;min-width:150px;}
+/* ---- result card v2 (stacked for sidebar) ---- */
+.result-hero{background:var(--ink);color:#fff;padding:22px 24px;display:flex;flex-direction:column;gap:16px;}
+.result-hero .metric{border-bottom:1px solid rgba(255,255,255,.14);padding-bottom:16px;}
+.result-hero .metric:last-child{border-bottom:none;padding-bottom:0;}
 .result-hero .metric .lab{font-family:var(--mono);font-size:10px;color:#8FA0AC;letter-spacing:.08em;text-transform:uppercase;}
-.result-hero .metric .val{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--amber);margin-top:6px;}
+.result-hero .metric .val{font-family:var(--mono);font-size:24px;font-weight:600;color:var(--amber);margin-top:6px;}
 .result-hero .metric .val .u{font-size:13px;color:#DDE3E7;font-weight:400;margin-left:4px;}
-.result-hero .metric.hero .val{color:#fff;font-size:32px;}
+.result-hero .metric.hero .val{color:#fff;font-size:30px;}
 
 .badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:20px;letter-spacing:.02em;}
 .badge.pass{background:var(--teal-wash);color:var(--teal);border:1px solid rgba(62,124,110,.35);}
@@ -186,7 +197,7 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
 .step-num{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:var(--steel-dk);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:13px;}
 .step-body{flex:1;min-width:0;}
 .step-title{font-family:var(--cond);font-weight:700;font-size:15px;margin-bottom:4px;}
-.step-desc{font-size:12.5px;color:#5C6B74;line-height:1.6;margin-bottom:14px;}
+.step-desc{font-size:12.5px;color:#48545C;line-height:1.6;margin-bottom:14px;}
 .step-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
 
 /* ---- field grouping + inline tooltips ---- */
@@ -194,7 +205,7 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
 .grid2 .group-label:first-child{margin-top:0;}
 .info-ic{cursor:help;color:#9AA6AC;font-size:12px;font-weight:400;text-transform:none;letter-spacing:0;}
 .info-ic:hover{color:var(--steel);}
-.unit-suffix{display:flex;align-items:center;padding:0 12px;border:1px solid var(--line);border-left:none;background:var(--panel-alt);font-family:var(--mono);font-size:13px;border-top-right-radius:4px;border-bottom-right-radius:4px;color:#5C6B74;}
+.unit-suffix{display:flex;align-items:center;padding:0 12px;border:1.5px solid var(--line-strong);border-left:none;background:var(--panel-alt);font-family:var(--mono);font-size:13px;border-top-right-radius:4px;border-bottom-right-radius:4px;color:#3A464E;}
 </style>
 </head>
 <body>
@@ -242,12 +253,14 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
       </div>
     </div>
 
+    <div class="workspace" id="workspace">
+    <div class="workspace-main">
     <!-- CALCULATION INPUTS : SINGLE LINE -->
     <section class="card attached" id="panel-single">
       <div class="card-h"><h3><span class="idx">A.</span>Calculation Inputs — Single Line</h3></div>
       <div class="card-body">
         <div class="grid2">
-          <div class="group-label">Design conditions</div>
+          <div class="group-label">Required inputs</div>
           <div class="field">
             <label>Material <span class="req">*</span></label>
             <select id="in-material" onchange="onMaterialChange()"></select>
@@ -261,18 +274,18 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
             <label>Design Pressure (internal) <span class="req">*</span></label>
             <div class="unit-row"><input id="in-press" type="number" placeholder="e.g. 4.2"><select id="in-press-unit"><option value="MPa">MPa</option><option value="bar">bar</option><option value="psi">psi</option><option value="kPa">kPa</option></select></div>
           </div>
-
-          <div class="group-label">Geometry</div>
           <div class="field">
-            <label>Nominal Pipe Size (NPS) <span class="info-ic" title="Selecting an NPS fills the OD from ASME B36.10M/19M. Choose the blank / Custom OD option for non-standard pipe.">ⓘ</span></label>
+            <label>Nominal Pipe Size (NPS) <span class="req">*</span> <span class="info-ic" title="Selecting an NPS fills the OD from ASME B36.10M/19M automatically. Choose the blank / Custom OD option at the top of the list for non-standard or HOLD sizes, then enter OD manually.">ⓘ</span></label>
             <select id="in-nps" onchange="onNpsChange()"></select>
+            <div class="unit-row" style="margin-top:8px;"><input id="in-od" type="number" placeholder="OD, e.g. 168.3"><select id="in-od-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
+            <div class="sub" id="od-note"></div>
           </div>
           <div class="field">
-            <label>Outside Diameter (OD) <span class="req">*</span></label>
-            <div class="unit-row"><input id="in-od" type="number" placeholder="e.g. 168.3"><select id="in-od-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
+            <label>Corrosion / Erosion Allowance, c <span class="req">*</span> <span class="info-ic" title="Engineering judgment input — corrosivity of service, expected life. Not from a standard table.">ⓘ</span></label>
+            <div class="unit-row"><input id="in-corr" type="number" value="3.0"><select id="in-corr-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
           </div>
 
-          <div class="group-label">Joint, allowances &amp; tolerance</div>
+          <div class="group-label">Joint &amp; tolerance (defaults — adjust if needed)</div>
           <div class="field">
             <label>Joint Type → Quality Factor E <span class="info-ic" title="Values per Table A-1B / §302.3.4 as commonly published — ERW is a fixed factor and cannot be increased by additional examination. Cross-check exact line/page against your licensed copy.">ⓘ</span></label>
             <select id="in-joint" onchange="onJointChange()">
@@ -291,10 +304,6 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
           <div class="field">
             <label>Weld Strength Reduction Factor W <span class="info-ic" title="Default 1.00. Reduce per Table 302.3.5 only for longitudinal/spiral welds in the creep range (typically > 425°C / 800°F depending on material). Verify applicability.">ⓘ</span></label>
             <input id="in-w" type="number" step="0.01" value="1.00">
-          </div>
-          <div class="field">
-            <label>Corrosion / Erosion Allowance, c <span class="req">*</span> <span class="info-ic" title="Engineering judgment input — corrosivity of service, expected life. Not from a standard table.">ⓘ</span></label>
-            <div class="unit-row"><input id="in-corr" type="number" value="3.0"><select id="in-corr-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
           </div>
           <div class="field">
             <label>Mechanical / Thread / Groove Allowance <span class="info-ic" title="Only applies to threaded, grooved, or bored components (§304.1.2(a)(3)).">ⓘ</span></label>
@@ -408,7 +417,9 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
         <div id="batch-warning"></div>
       </div>
     </section>
+    </div>
 
+    <div class="workspace-side">
     <!-- RESULTS -->
     <section class="card" id="results-card" style="display:none;">
       <div class="card-h"><h3><span class="idx">B.</span>Results</h3>
@@ -427,6 +438,12 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
       </div>
       <div class="steps" id="calc-steps"></div>
     </section>
+    <div class="results-placeholder" id="results-placeholder">
+      <div class="rp-icon">📐</div>
+      <div>Results will appear here as soon as you calculate — no need to scroll.</div>
+    </div>
+    </div>
+    </div>
 
     <!-- BATCH RESULTS -->
     <section class="card" id="batch-results-card" style="display:none;">
@@ -680,10 +697,21 @@ function renderNpsSelect(){
 }
 function onNpsChange(){
   const i = document.getElementById('in-nps').value;
-  if(i===''){ return; }
+  const odInput = document.getElementById('in-od');
+  const odUnit = document.getElementById('in-od-unit');
+  const note = document.getElementById('od-note');
+  if(i===''){
+    odInput.readOnly = false;
+    odUnit.disabled = false;
+    if(note) note.textContent = 'Custom / non-standard size — enter OD manually (e.g. for a HOLD size).';
+    return;
+  }
   const p = PIPE_SCHEDULES[i];
-  document.getElementById('in-od').value = p.od;
-  document.getElementById('in-od-unit').value = 'mm';
+  odInput.value = p.od;
+  odUnit.value = 'mm';
+  odInput.readOnly = true;
+  odUnit.disabled = true;
+  if(note) note.textContent = `OD auto-filled from NPS ${p.nps} per ASME B36.10M/19M — switch to "Custom OD" above to override.`;
 }
 
 // Given a required t_min and the OD actually entered, find the matching NPS row (if any) and
@@ -814,6 +842,7 @@ function runCalc(){
     const label = r.error==='no-material' ? 'Cannot calculate.' : r.error==='thick-wall' ? 'Thick-wall regime detected.' : 'Cannot calculate.';
     warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>${label}</b> ${r.message}</div></div>`;
     document.getElementById('results-card').style.display='none';
+    document.getElementById('results-placeholder').style.display='flex';
     return;
   }
 
@@ -858,6 +887,7 @@ function runCalc(){
 
   document.getElementById('results-card').style.display = 'block';
   document.getElementById('batch-results-card').style.display = 'none';
+  document.getElementById('results-placeholder').style.display = 'none';
   window._lastCalc = {m,S,P,OD,tempC,E,W,Y,c,mech,millPct,t,tm,tmin};
 }
 
@@ -922,8 +952,10 @@ function switchMode(mode){
   document.getElementById('tab-batch').classList.toggle('active', mode==='batch');
   document.getElementById('panel-single').style.display = mode==='single' ? 'block' : 'none';
   document.getElementById('panel-batch').style.display = mode==='batch' ? 'block' : 'none';
+  document.getElementById('workspace').classList.toggle('mode-batch', mode==='batch');
   document.getElementById('results-card').style.display='none';
   document.getElementById('batch-results-card').style.display='none';
+  document.getElementById('results-placeholder').style.display = mode==='single' ? 'flex' : 'none';
 }
 
 const LINE_LIST_HEADERS = ["Line No / Tag","NPS","Custom OD (mm)","Piping Class","Material Spec/Grade",
@@ -1293,6 +1325,7 @@ function exportBatchCalc(){
 renderMaterialTable();
 renderMaterialSelect();
 renderNpsSelect();
+onNpsChange();
 document.getElementById('tb-date').valueAsDate = new Date();
 </script>
 </body>

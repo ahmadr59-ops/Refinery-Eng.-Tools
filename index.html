@@ -37,24 +37,21 @@
 *{box-sizing:border-box;}
 html{font-size:15px;}
 body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
-.app{display:grid;grid-template-columns:252px 1fr;min-height:100vh;}
+.app{display:block;min-height:100vh;}
 button,input,select{font-family:inherit;transition:border-color .15s ease, background .15s ease, box-shadow .15s ease, color .15s ease, transform .1s ease;}
 
-/* ---- sidebar ---- */
-.sidebar{background:var(--ink);color:#DDE3E7;padding:26px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;}
-.brand{padding:0 22px 22px;border-bottom:1px solid rgba(255,255,255,.10);margin-bottom:18px;}
-.brand .mark{font-family:var(--mono);font-weight:700;color:var(--amber);font-size:11px;letter-spacing:.16em;}
-.brand h1{font-family:var(--cond);font-size:22px;margin:6px 0 0;font-weight:700;letter-spacing:.005em;line-height:1.2;}
-.brand p{font-size:11.5px;color:#8FA0AC;margin:8px 0 0;line-height:1.5;}
-.nav-group{padding:0 14px;flex:1;}
-.nav-label{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:#5F7482;padding:16px 10px 8px;text-transform:uppercase;}
-.nav-item{display:flex;gap:11px;align-items:flex-start;padding:11px 10px;border-radius:5px;font-size:13px;cursor:default;margin-bottom:2px;}
-.nav-item.active{background:rgba(232,163,61,.13);border-left:2px solid var(--amber);padding-left:8px;}
-.nav-item .n{font-family:var(--mono);color:var(--amber);font-weight:600;min-width:18px;}
-.nav-item.disabled{opacity:.34;}
-.nav-item.disabled .n{color:#6E8493;}
-.nav-item span span{color:#8FA0AC;font-size:11px;}
-.sidebar .foot{padding:18px 22px 0;margin-top:18px;border-top:1px solid rgba(255,255,255,.10);font-size:10.5px;color:#617583;line-height:1.6;}
+/* ---- horizontal top brand bar ---- */
+.topbrand{background:var(--ink);color:#DDE3E7;padding:14px 42px;display:flex;align-items:center;gap:32px;flex-wrap:wrap;position:sticky;top:0;z-index:40;box-shadow:0 2px 10px rgba(0,0,0,.15);}
+.topbrand-id{display:flex;align-items:baseline;gap:10px;}
+.topbrand .mark{font-family:var(--mono);font-weight:700;color:var(--amber);font-size:11px;letter-spacing:.16em;}
+.topbrand h1{font-family:var(--cond);font-size:17px;margin:0;font-weight:700;letter-spacing:.005em;}
+.topbrand-nav{display:flex;gap:6px;flex-wrap:wrap;flex:1;}
+.topbrand-nav .nav-item{display:flex;gap:7px;align-items:center;padding:6px 12px;border-radius:5px;font-size:12.5px;cursor:default;}
+.topbrand-nav .nav-item.active{background:rgba(232,163,61,.15);color:#fff;}
+.topbrand-nav .nav-item .n{font-family:var(--mono);color:var(--amber);font-weight:600;}
+.topbrand-nav .nav-item.disabled{opacity:.4;}
+.topbrand-nav .nav-item.disabled .n{color:#6E8493;}
+.topbrand-credit{font-size:10.5px;color:#7C8A93;font-family:var(--mono);white-space:nowrap;}
 
 /* ---- main ---- */
 main{padding:34px 42px 90px;max-width:1440px;}
@@ -203,31 +200,28 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
 /* ---- field grouping + inline tooltips ---- */
 .group-label{grid-column:1/-1;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--steel-dk);text-transform:uppercase;padding-bottom:8px;margin-top:4px;border-bottom:1px solid var(--line-soft);}
 .grid2 .group-label:first-child{margin-top:0;}
-.info-ic{cursor:help;color:#9AA6AC;font-size:12px;font-weight:400;text-transform:none;letter-spacing:0;}
+.info-ic{cursor:pointer;color:#9AA6AC;font-size:13px;font-weight:400;text-transform:none;letter-spacing:0;background:none;border:none;padding:0;line-height:1;vertical-align:middle;}
 .info-ic:hover{color:var(--steel);}
+.note-popover{position:absolute;max-width:320px;background:var(--ink);color:#E4E9EB;padding:13px 15px;border-radius:6px;font-size:12px;font-family:var(--sans);line-height:1.6;box-shadow:var(--shadow-pop);z-index:300;}
+.note-popover b{color:#fff;}
 .unit-suffix{display:flex;align-items:center;padding:0 12px;border:1.5px solid var(--line-strong);border-left:none;background:var(--panel-alt);font-family:var(--mono);font-size:13px;border-top-right-radius:4px;border-bottom-right-radius:4px;color:#3A464E;}
 </style>
 </head>
 <body>
 <div class="app">
 
-  <aside class="sidebar">
-    <div class="brand">
+  <header class="topbrand">
+    <div class="topbrand-id">
       <div class="mark">MECHTOOLKIT</div>
       <h1>Refinery Eng. Tools</h1>
-      <p>Standards-based calculation modules for rotating &amp; static equipment engineering.</p>
     </div>
-    <div class="nav-group">
-      <div class="nav-label">Module 01</div>
-      <div class="nav-item active"><span class="n">▣</span><span>Pipe Wall Thickness<br><span style="color:#8FA0AC;font-size:11px;">ASME B31.3 §304.1</span></span></div>
-      <div class="nav-label">Planned</div>
-      <div class="nav-item disabled"><span class="n">▢</span><span>Flange Rating Check<br><span style="font-size:11px;">ASME B16.5</span></span></div>
-      <div class="nav-item disabled"><span class="n">▢</span><span>Relief Valve Sizing<br><span style="font-size:11px;">API 520/521</span></span></div>
-      <div class="nav-item disabled"><span class="n">▢</span><span>Pump NPSH Margin<br><span style="font-size:11px;">API 610 / Hydraulic Inst.</span></span></div>
-      <div class="nav-item disabled"><span class="n">▢</span><span>Pipe Support Spacing<br><span style="font-size:11px;">ASME B31.3 / MSS SP-69</span></span></div>
-    </div>
-    <div class="foot">v0.1 · local build<br>All standards data must be verified against your licensed copy before use in any engineering deliverable.</div>
-  </aside>
+    <nav class="topbrand-nav">
+      <div class="nav-item active"><span class="n">▣</span><span>Pipe Wall Thickness</span></div>
+      <div class="nav-item disabled"><span class="n">▢</span><span>Flange Rating Check</span></div>
+      <div class="nav-item disabled"><span class="n">▢</span><span>Pipe Support Spacing</span></div>
+    </nav>
+    <div class="topbrand-credit">Developed by Ahmad Rezazadeh</div>
+  </header>
 
   <main>
     <!-- MODE TABS -->
@@ -239,7 +233,7 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
     <div class="titleblock">
       <div class="tb-head">
         <h2>Pipe Wall Thickness Calculation</h2>
-        <div class="std">ASME B31.3-2024 · §304.1.2</div>
+        <div class="std">ASME B31.3-2024</div>
       </div>
       <div class="tb-grid">
         <div class="tb-cell"><label>Project</label><input id="tb-project" placeholder="Project name"></div>
@@ -262,9 +256,9 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
         <div class="grid2">
           <div class="group-label">Required inputs</div>
           <div class="field">
-            <label>Material <span class="req">*</span></label>
+            <label>Material <span class="req">*</span> <button type="button" class="info-ic" onclick="toggleMaterialInfo(event)">ⓘ</button></label>
             <select id="in-material" onchange="onMaterialChange()"></select>
-            <div class="sub" id="material-s-echo"></div>
+            <div class="sub" id="material-s-echo" style="display:none;"></div>
           </div>
           <div class="field">
             <label>Design Temperature <span class="req">*</span></label>
@@ -275,19 +269,19 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
             <div class="unit-row"><input id="in-press" type="number" placeholder="e.g. 4.2"><select id="in-press-unit"><option value="MPa">MPa</option><option value="bar">bar</option><option value="psi">psi</option><option value="kPa">kPa</option></select></div>
           </div>
           <div class="field">
-            <label>Nominal Pipe Size (NPS) <span class="req">*</span> <span class="info-ic" title="Selecting an NPS fills the OD from ASME B36.10M/19M automatically. Choose the blank / Custom OD option at the top of the list for non-standard or HOLD sizes, then enter OD manually.">ⓘ</span></label>
+            <label>Nominal Pipe Size (NPS) <span class="req">*</span> <button type="button" class="info-ic" onclick="toggleNote('nps-od',event)">ⓘ</button></label>
             <select id="in-nps" onchange="onNpsChange()"></select>
             <div class="unit-row" style="margin-top:8px;"><input id="in-od" type="number" placeholder="OD, e.g. 168.3"><select id="in-od-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
             <div class="sub" id="od-note"></div>
           </div>
           <div class="field">
-            <label>Corrosion / Erosion Allowance, c <span class="req">*</span> <span class="info-ic" title="Engineering judgment input — corrosivity of service, expected life. Not from a standard table.">ⓘ</span></label>
+            <label>Corrosion / Erosion Allowance, c <span class="req">*</span> <button type="button" class="info-ic" onclick="toggleNote('corrosion',event)">ⓘ</button></label>
             <div class="unit-row"><input id="in-corr" type="number" value="3.0"><select id="in-corr-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
           </div>
 
           <div class="group-label">Joint &amp; tolerance (defaults — adjust if needed)</div>
           <div class="field">
-            <label>Joint Type → Quality Factor E <span class="info-ic" title="Values per Table A-1B / §302.3.4 as commonly published — ERW is a fixed factor and cannot be increased by additional examination. Cross-check exact line/page against your licensed copy.">ⓘ</span></label>
+            <label>Joint Type → Quality Factor E <button type="button" class="info-ic" onclick="toggleNote('joint-e',event)">ⓘ</button></label>
             <select id="in-joint" onchange="onJointChange()">
               <option value="1.00">Seamless — E = 1.00</option>
               <option value="1.00-efw">EFW, double-welded, 100% RT — E = 1.00</option>
@@ -302,15 +296,15 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
             <input id="in-joint-custom" type="number" step="0.01" placeholder="E value" style="margin-top:6px;display:none;">
           </div>
           <div class="field">
-            <label>Weld Strength Reduction Factor W <span class="info-ic" title="Default 1.00. Reduce per Table 302.3.5 only for longitudinal/spiral welds in the creep range (typically > 425°C / 800°F depending on material). Verify applicability.">ⓘ</span></label>
+            <label>Weld Strength Reduction Factor W <button type="button" class="info-ic" onclick="toggleNote('weld-w',event)">ⓘ</button></label>
             <input id="in-w" type="number" step="0.01" value="1.00">
           </div>
           <div class="field">
-            <label>Mechanical / Thread / Groove Allowance <span class="info-ic" title="Only applies to threaded, grooved, or bored components (§304.1.2(a)(3)).">ⓘ</span></label>
+            <label>Mechanical / Thread / Groove Allowance <button type="button" class="info-ic" onclick="toggleNote('mech-allow',event)">ⓘ</button></label>
             <div class="unit-row"><input id="in-mech" type="number" value="0"><select id="in-mech-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
           </div>
           <div class="field">
-            <label>Mill Undertolerance <span class="info-ic" title="12.5% is the common ASTM seamless-pipe default (e.g. A106/A335). Verify against the applicable ASTM spec for your selected material — plate/welded pipe tolerances differ.">ⓘ</span></label>
+            <label>Mill Undertolerance <button type="button" class="info-ic" onclick="toggleNote('mill-undertol',event)">ⓘ</button></label>
             <div class="unit-row"><input id="in-mill" type="number" value="12.5" style="flex:1"><span class="unit-suffix">%</span></div>
           </div>
         </div>
@@ -401,11 +395,11 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
               <div class="step-desc">If the Line List also carries the contractor's <b>selected Nominal Schedule/WT</b> per line (columns already included in the template), this tool independently recalculates t_min and flags any line where the contractor's thickness falls short — or is unusually over-conservative. Leave a line's contractor column blank to skip verification for it (calculation-only).</div>
               <div class="grid2">
                 <div class="field">
-                  <label>Flag as WARN if margin below (%) <span class="info-ic" title="Margin = (contractor WT − calculated t_min) / t_min. Below 0% is always FAIL (nonconforming per ASME B31.3 — t must be ≥ t_min). A small positive margin is still compliant but tight; this threshold flags it for a closer look.">ⓘ</span></label>
+                  <label>Flag as WARN if margin below (%) <button type="button" class="info-ic" onclick="toggleNote('warn-margin',event)">ⓘ</button></label>
                   <input id="batch-warn-margin" type="number" step="0.5" value="5">
                 </div>
                 <div class="field">
-                  <label>Flag as over-conservative above (%) <span class="info-ic" title="Informational only — a very large excess margin is not a code violation, but often signals the wrong class/schedule was picked and may be worth an economy review.">ⓘ</span></label>
+                  <label>Flag as over-conservative above (%) <button type="button" class="info-ic" onclick="toggleNote('overcons-margin',event)">ⓘ</button></label>
                   <input id="batch-overcons-margin" type="number" step="5" value="75">
                 </div>
               </div>
@@ -432,11 +426,13 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
         <div class="metric" style="flex:0 0 auto;"><div class="lab">Status</div><div style="margin-top:6px;" id="res-badge"></div></div>
       </div>
       <div class="sch-panel" id="sch-panel" style="display:none;">
-        <h4>Nearest Standard Schedule — ASME B36.10M / B36.19M</h4>
-        <p class="hint" style="margin-bottom:10px;">Dimensional data (OD/WT by NPS &amp; Schedule) is common public engineering reference data — still, cross-check against B36.10M/19M before issuing. Rows in bold/highlighted are schedules meeting or exceeding t<sub>min</sub>; the highlighted row is the lightest (most economical) adequate schedule.</p>
+        <h4>Nearest Standard Schedule — ASME B36.10M / B36.19M <button type="button" class="info-ic" onclick="toggleNote('schedule-chart',event)">ⓘ</button></h4>
         <div style="overflow-x:auto;"><table class="sch" id="sch-table"></table></div>
+        <div id="sch-caption" style="font-size:11px;color:#8A97A0;margin-top:8px;"></div>
       </div>
-      <div class="steps" id="calc-steps"></div>
+      <div style="padding:14px 22px;border-top:1px solid var(--line);">
+        <button class="small-btn" onclick="openCalcModal()">🔍 View calculation breakdown</button>
+      </div>
     </section>
     <div class="results-placeholder" id="results-placeholder">
       <div class="rp-icon">📐</div>
@@ -465,6 +461,19 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
         <p class="hint" style="margin:0;">Review, edit, or add the allowable stress (S) data, per-material temperature range, and source reference used by Sections A/B above for both Single Line and Batch modes. Changes here apply immediately.</p>
       </div>
     </section>
+
+    <!-- CALCULATION BREAKDOWN MODAL -->
+    <div class="modal-overlay" id="calc-modal">
+      <div class="modal-box" style="max-width:720px;">
+        <div class="card-h">
+          <h3>Calculation Breakdown</h3>
+          <button class="modal-close" onclick="closeCalcModal()">✕ Close</button>
+        </div>
+        <div class="card-body">
+          <div class="steps" id="calc-steps"></div>
+        </div>
+      </div>
+    </div>
 
     <!-- MATERIAL DATABASE MODAL -->
     <div class="modal-overlay" id="db-modal">
@@ -514,6 +523,62 @@ const toMPa = (v,u)=>({MPa:v,bar:v*0.1,psi:v*0.00689476,kPa:v*0.001}[u]);
 const toMM  = (v,u)=>u==='in'? v*25.4 : v;
 const toC   = (v,u)=>u==='F'? (v-32)*5/9 : v;
 const fmt = n => (Math.round(n*1000)/1000).toString();
+
+/* ---------------- Click-to-open note popovers ---------------- */
+// Short reference notes are hidden by default and only shown when the user clicks the ⓘ icon
+// next to the relevant field — keeps the form uncluttered while still surfacing the detail on demand.
+const NOTES = {
+  'nps-od': 'Selecting an NPS fills the OD from ASME B36.10M/19M automatically. Choose the blank / Custom OD option at the top of the list for non-standard or HOLD sizes, then enter OD manually.',
+  'corrosion': 'Engineering judgment input — corrosivity of service, expected life. Not from a standard table.',
+  'joint-e': 'Values per Table A-1B / §302.3.4 as commonly published — ERW is a fixed factor and cannot be increased by additional examination. Cross-check exact line/page against your licensed copy.',
+  'weld-w': 'Default 1.00. Reduce per Table 302.3.5 only for longitudinal/spiral welds in the creep range (typically > 425°C / 800°F depending on material). Verify applicability.',
+  'mech-allow': 'Only applies to threaded, grooved, or bored components (§304.1.2(a)(3)).',
+  'mill-undertol': '12.5% is the common ASTM seamless-pipe default (e.g. A106/A335). Verify against the applicable ASTM spec for your selected material — plate/welded pipe tolerances differ.',
+  'warn-margin': 'Margin = (contractor WT − calculated t_min) / t_min. Below 0% is always FAIL (nonconforming per ASME B31.3 — t must be ≥ t_min). A small positive margin is still compliant but tight; this threshold flags it for a closer look.',
+  'overcons-margin': 'Informational only — a very large excess margin is not a code violation, but often signals the wrong class/schedule was picked and may be worth an economy review.',
+  'schedule-chart': '<b>Nearest Standard Schedule — ASME B36.10M / B36.19M.</b> Dimensional data (OD/WT by NPS & Schedule) is common public engineering reference data — still, cross-check against B36.10M/19M before issuing. The highlighted row is the lightest (most economical) schedule meeting or exceeding t_min.'
+};
+
+let activePopover = null;
+let activePopoverAnchor = null;
+function positionPopover(pop, anchorEl){
+  const rect = anchorEl.getBoundingClientRect();
+  document.body.appendChild(pop);
+  const popWidth = pop.offsetWidth || 320;
+  let left = rect.left + window.scrollX;
+  const maxLeft = window.scrollX + document.documentElement.clientWidth - popWidth - 16;
+  if(left > maxLeft) left = Math.max(16, maxLeft);
+  pop.style.top = (rect.bottom + window.scrollY + 8) + 'px';
+  pop.style.left = left + 'px';
+}
+function closePopover(){
+  if(activePopover){ activePopover.remove(); activePopover=null; activePopoverAnchor=null; }
+  document.removeEventListener('click', closePopoverOnOutsideClick, true);
+}
+function closePopoverOnOutsideClick(e){
+  if(activePopover && !activePopover.contains(e.target) && e.target!==activePopoverAnchor){ closePopover(); }
+}
+function openPopover(html, anchorEl){
+  closePopover();
+  const pop = document.createElement('div');
+  pop.className = 'note-popover';
+  pop.innerHTML = html;
+  positionPopover(pop, anchorEl);
+  activePopover = pop;
+  activePopoverAnchor = anchorEl;
+  setTimeout(()=>document.addEventListener('click', closePopoverOnOutsideClick, true), 0);
+}
+function toggleNote(key, ev){
+  ev.stopPropagation();
+  if(activePopoverAnchor === ev.currentTarget){ closePopover(); return; }
+  openPopover(NOTES[key], ev.currentTarget);
+}
+function toggleMaterialInfo(ev){
+  ev.stopPropagation();
+  if(activePopoverAnchor === ev.currentTarget){ closePopover(); return; }
+  const echo = document.getElementById('material-s-echo');
+  openPopover(echo ? (echo.innerHTML || 'Select a material and enter a design temperature to preview S.') : '', ev.currentTarget);
+}
 
 /* ---------------- Material DB (localStorage-backed) ---------------- */
 // S-tables below are transcribed directly from the ASME B31.3-2024 Table A-1 pages supplied by the user
@@ -662,6 +727,9 @@ function onMaterialChange(){
 function openDbModal(){ document.getElementById('db-modal').classList.add('open'); }
 function closeDbModal(){ document.getElementById('db-modal').classList.remove('open'); }
 document.getElementById('db-modal').addEventListener('click', function(e){ if(e.target===this) closeDbModal(); });
+function openCalcModal(){ document.getElementById('calc-modal').classList.add('open'); }
+function closeCalcModal(){ document.getElementById('calc-modal').classList.remove('open'); }
+document.getElementById('calc-modal').addEventListener('click', function(e){ if(e.target===this) closeCalcModal(); });
 
 /* ---------------- Standard pipe schedule data (ASME B36.10M / B36.19M) ----------------
    Public dimensional standard data (OD/WT by NPS & Schedule) — not proprietary allowable-
@@ -715,7 +783,11 @@ function onNpsChange(){
 }
 
 // Given a required t_min and the OD actually entered, find the matching NPS row (if any) and
-// render a PASS/FAIL schedule table with the lightest adequate schedule highlighted.
+// render a compact PASS/FAIL view: only the last failing schedule (the boundary), the lightest
+// adequate (chosen) schedule, and — only if the chosen one is a tight/borderline call — the next
+// heavier passing schedule as a safer fallback. Every other schedule is omitted to avoid a wall
+// of redundant PASS/FAIL rows once the boundary is clear.
+const SCHEDULE_BORDERLINE_MARGIN_PCT = 10;
 function renderSchedulePanel(OD, tmin){
   const panel = document.getElementById('sch-panel');
   const rowMatch = PIPE_SCHEDULES.find(p=>Math.abs(p.od-OD)<0.5);
@@ -726,22 +798,45 @@ function renderSchedulePanel(OD, tmin){
   }
   panel.style.display='block';
   const entries = Object.entries(rowMatch.wt).sort((a,b)=>a[1]-b[1]);
-  let firstPass = true;
-  const rows = entries.map(([sch,wt])=>{
+  const chosenIdx = entries.findIndex(([sch,wt])=>wt>=tmin);
+
+  const rowHtml = (sch, wt, tag) => {
     const passes = wt >= tmin;
-    const marginPct = ((wt-tmin)/tmin*100);
-    const isChosen = passes && firstPass;
-    if(passes) firstPass=false;
-    return `<tr class="${isChosen?'selected':''}">
+    const marginPct = (wt-tmin)/tmin*100;
+    return `<tr class="${tag==='chosen'?'selected':''}">
       <td>Sch ${sch}</td>
       <td>${wt.toFixed(2)} mm</td>
       <td>${passes?`<span class="badge pass">PASS</span>`:`<span class="badge fail">FAIL</span>`}</td>
       <td>${passes? (marginPct>=0?'+':'')+marginPct.toFixed(1)+'%' : '—'}</td>
-      <td>${isChosen? '← lightest adequate schedule':''}</td>
+      <td>${tag==='chosen'?'← lightest adequate schedule':tag==='fallback'?'safer alternative (tight margin above)':''}</td>
     </tr>`;
-  }).join('');
+  };
+
+  let shownRows = [];
+  let omittedCount = 0;
+  if(chosenIdx === -1){
+    // Nothing in the chart meets t_min — show only the heaviest available as reference.
+    const [sch,wt] = entries[entries.length-1];
+    shownRows.push(rowHtml(sch, wt, 'heaviest'));
+    omittedCount = entries.length - 1;
+  } else {
+    if(chosenIdx > 0){ const [sch,wt] = entries[chosenIdx-1]; shownRows.push(rowHtml(sch, wt, 'lastfail')); }
+    const [chSch, chWt] = entries[chosenIdx];
+    shownRows.push(rowHtml(chSch, chWt, 'chosen'));
+    const chMarginPct = (chWt-tmin)/tmin*100;
+    if(chMarginPct < SCHEDULE_BORDERLINE_MARGIN_PCT && chosenIdx+1 < entries.length){
+      const [sch,wt] = entries[chosenIdx+1];
+      shownRows.push(rowHtml(sch, wt, 'fallback'));
+    }
+    omittedCount = entries.length - shownRows.length;
+  }
+
   document.getElementById('sch-table').innerHTML =
-    `<tr><th>Schedule</th><th>Nominal WT</th><th>vs t_min</th><th>Margin</th><th></th></tr>${rows}`;
+    `<tr><th>Schedule</th><th>Nominal WT</th><th>vs t_min</th><th>Margin</th><th></th></tr>${shownRows.join('')}`;
+  const capEl = document.getElementById('sch-caption');
+  if(capEl) capEl.textContent = omittedCount>0
+    ? `${omittedCount} other schedule${omittedCount>1?'s':''} in this size not shown (redundant PASS above the chosen one, or FAIL further below it).`
+    : '';
 }
 
 function onJointChange(){
@@ -964,9 +1059,6 @@ const LINE_LIST_HEADERS = ["Line No / Tag","NPS","Custom OD (mm)","Piping Class"
   "Mechanical Allowance Override (mm)","Mill Undertolerance Override (%)",
   "Contractor Selected Schedule","Contractor Nominal WT Override (mm)","Remarks"];
 
-const PMS_HEADERS = ["Piping Class","Material Spec/Grade","Joint Type E","W",
-  "Corrosion Allowance (mm)","Mechanical Allowance (mm)","Mill Undertolerance (%)","Rating Class","Remarks"];
-
 function downloadLineListTemplate(){
   const example1 = ["6-P-1042-B3C1","6","","B1C3(N)","","4.2","MPa","350","C","","","","","","40 / STD","","contractor doc says Sch 40"];
   const example2 = ["2-P-1043-N1F1","2","","N1F1","ASTM A106 Gr. B","9.7","bar","45","C","","","","","","","","calculation only — no contractor value to verify"];
@@ -979,7 +1071,7 @@ function downloadLineListTemplate(){
     ["Line No / Tag — your line number / tag, for traceability in the output register only."],
     ["NPS — nominal pipe size as text, matching this tool's schedule chart, e.g. 1/2, 3/4, 1, 1 1/4, 1 1/2, 2, 2 1/2, 3, 4, 6, 8, or 10/12/14/16/18/20/24 (OD reference only, no schedule match above NPS 8)."],
     ["Custom OD (mm) — leave blank to use NPS lookup. Fill in to override with a non-standard OD (e.g. for a size marked HOLD in your Line List)."],
-    ["Piping Class — the project piping class code (e.g. B1C3(N)). Only used if 'Material Spec/Grade' is left blank and a PMS file is uploaded."],
+    ["Piping Class — the project piping class code (e.g. A1A1). Only used if 'Material Spec/Grade' is left blank and a PMS file is uploaded — this line's NPS is matched against the PMS's per-class size ranges to pick the right row."],
     ["Material Spec/Grade — fill this directly to skip the PMS lookup entirely. Text must exactly match a 'Spec / Grade' entry in this tool's Material Database (Material Database button, top of page)."],
     ["Design Pressure / Pressure Unit — e.g. 4.2 / MPa. Units: MPa, bar, psi, kPa."],
     ["Design Temperature / Temperature Unit — e.g. 350 / C. Units: C or F."],
@@ -999,23 +1091,38 @@ function downloadLineListTemplate(){
   XLSX.writeFile(wb, "mechtoolkit_line_list_template.xlsx");
 }
 
+const PMS_HEADERS = ["Piping Class","Size From (NPS)","Size To (NPS)","Material Spec/Grade","Joint Type E",
+  "W","Corrosion Allowance (mm)","Mechanical Allowance (mm)","Mill Undertolerance (%)","Schedule/Rating (ref.)","Remarks"];
+
 function downloadPmsTemplate(){
-  const example1 = ["B1C3(N)","ASTM A106 Gr. B","1.00","1.00","3.0","0","12.5","#300",""];
-  const example2 = ["N1F1","ASTM A312 TP316L","1.00","1.00","1.5","0","12.5","#150",""];
-  const ws = XLSX.utils.aoa_to_sheet([PMS_HEADERS, example1, example2]);
+  // Example rows below mirror a real project Line Class Sheet (Pipe section only) — one row per size
+  // range, since material/joint/schedule commonly change across the range within a single class.
+  const rows = [
+    ["A1A1","0.5","1.5","ASTM A53 Gr. B","1.00","1.00","1.5","0","12.5","SCH80","SMLS, PE"],
+    ["A1A1","2","6","ASTM A53 Gr. B","1.00","1.00","1.5","0","12.5","SCH40","SMLS, BE"],
+    ["A1A1","8","12","ASTM A53 Gr. B","1.00","1.00","1.5","0","12.5","SCH30","SMLS, BE"],
+    ["A1A1","14","24","ASTM A53 Gr. B","1.00","1.00","1.5","0","12.5","SCH20","SMLS, BE"],
+    ["A1A1","26","36","API 5L Gr. B PSL1","1.00","1.00","1.5","0","12.5","STD","DSAW, 100%RT, BE"],
+    ["A1A1","38","48","API 5L Gr. B PSL1","1.00","1.00","1.5","0","12.5","XS","DSAW, 100%RT, BE"],
+  ];
+  const ws = XLSX.utils.aoa_to_sheet([PMS_HEADERS, ...rows]);
   const instr = XLSX.utils.aoa_to_sheet([
-    ["PMS (Piping Material Specification) template — instructions"],
+    ["PMS (Piping Material Specification / Line Class Sheet) template — instructions"],
     [""],
     ["Only needed if your Line List identifies lines by Piping Class code rather than stating the Material Spec/Grade directly."],
     ["Do not rename, reorder, or delete the header row (row 1) of the 'PMS' sheet."],
     [""],
+    ["One row per SIZE RANGE within a class, not one row per class — this matches how real Line Class Sheets are laid out, since material, joint type, and schedule commonly change across the size range (e.g. seamless pipe for small bore, DSAW welded pipe for large bore, within the SAME class)."],
     ["Piping Class — must exactly match the 'Piping Class' text used in the Line List."],
+    ["Size From (NPS) / Size To (NPS) — the inclusive nominal size range this row covers, as plain numbers in inches (e.g. 2, 6, or fractions like 1 1/2). A line's NPS is matched to the row whose range contains it. Ranges for the same class must not overlap and should have no gaps across your project's size list."],
     ["Material Spec/Grade — must exactly match a 'Spec / Grade' entry in this tool's Material Database."],
-    ["Joint Type E — the class default joint quality factor E (e.g. 1.00 seamless, 0.85 ERW, per Table A-1B/302.3.4)."],
+    ["Joint Type E — enter the NUMERIC value yourself (e.g. 1.00 for seamless or double-welded 100% RT, 0.85 for ERW) per Table A-1B/§302.3.4. This tool does NOT infer E from weld-type text (SMLS/DSAW/ERW/etc.) in your Description column — that interpretation must be made by the engineer once, here."],
     ["W — the class default weld strength reduction factor (usually 1.00 unless the class governs creep-range service, per Table 302.3.5)."],
-    ["Corrosion Allowance (mm) / Mechanical Allowance (mm) / Mill Undertolerance (%) — class defaults; can still be overridden per line in the Line List."],
-    ["Rating Class — informational only (e.g. #150/#300), not used in the thickness calculation."],
-    ["Remarks — free text, not used in the calculation."]
+    ["Corrosion Allowance (mm) / Mechanical Allowance (mm) / Mill Undertolerance (%) — class defaults for this size range; can still be overridden per line in the Line List."],
+    ["Schedule/Rating (ref.) — informational only, e.g. the Schedule/Rating shown on the Line Class Sheet for this range. Not used in the calculation itself, but useful as a cross-reference and can be typed into a line's 'Contractor Selected Schedule' column if you want to verify against it."],
+    ["Remarks — free text (e.g. weld/end-type description such as 'SMLS, PE' or 'DSAW, 100%RT, BE'), not used in the calculation."],
+    [""],
+    ["Scope note: this template covers PIPE only (not fittings/flanges/valves/gaskets/bolting), matching what this tool's wall-thickness calculation needs."]
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "PMS");
@@ -1095,7 +1202,43 @@ function findMaterialBySpec(specText){
   return materials.findIndex(m=>m.spec.trim().toLowerCase()===s);
 }
 
-function resolveMaterialForRow(row, pmsMap){
+// Parses an NPS value (as commonly written on Line Class Sheets / Line Lists) to a decimal-inch number
+// for size-range comparison. Handles whole numbers, simple fractions ("1/2"), mixed numbers ("1 1/2"),
+// and unicode fraction glyphs (½ ¼ ¾ etc.). Returns null if it cannot be parsed.
+const UNICODE_FRACTIONS = {'½':'1/2','¼':'1/4','¾':'3/4','⅛':'1/8','⅜':'3/8','⅝':'5/8','⅞':'7/8'};
+function parseNpsToInches(raw){
+  if(raw===null || raw===undefined) return null;
+  let s = raw.toString().trim().replace(/["']/g,'');
+  if(!s) return null;
+  for(const [uni,rep] of Object.entries(UNICODE_FRACTIONS)) s = s.split(uni).join(' '+rep);
+  s = s.trim().replace(/\s+/g,' ');
+  let m = s.match(/^(\d+)\s+(\d+)\/(\d+)$/);
+  if(m) return parseInt(m[1],10) + parseInt(m[2],10)/parseInt(m[3],10);
+  m = s.match(/^(\d+)\/(\d+)$/);
+  if(m) return parseInt(m[1],10)/parseInt(m[2],10);
+  m = s.match(/^(\d+(\.\d+)?)$/);
+  if(m) return parseFloat(m[1]);
+  return null;
+}
+
+// Finds the PMS row for a given class whose [Size From, Size To] range (inclusive) contains npsRaw.
+// A real Line Class Sheet has one row per size range within a class (material/joint/schedule often
+// differ across the range), so matching must consider both class AND size — not class alone.
+function findPmsRowForClassAndSize(pmsRows, cls, npsRaw){
+  const candidates = pmsRows.filter(r => (r['Piping Class']||'').toString().trim().toLowerCase() === cls.toLowerCase());
+  if(candidates.length===0) return {error:`Piping Class "${cls}" not found in the uploaded PMS.`};
+  const npsNum = parseNpsToInches(npsRaw);
+  if(npsNum===null) return {error:`NPS "${npsRaw||''}" could not be parsed to match a PMS size range — enter NPS as e.g. "2", "1 1/2", "8".`};
+  const match = candidates.find(r=>{
+    const from = parseNpsToInches(r['Size From (NPS)']);
+    const to = parseNpsToInches(r['Size To (NPS)']);
+    return from!==null && to!==null && npsNum >= from-1e-9 && npsNum <= to+1e-9;
+  });
+  if(!match) return {error:`No PMS size-range for class "${cls}" covers NPS ${npsRaw} — check the PMS's Size From/To columns.`};
+  return {row:match};
+}
+
+function resolveMaterialForRow(row, pmsRows){
   const directSpec = (row['Material Spec/Grade']||'').toString().trim();
   if(directSpec){
     const idx = findMaterialBySpec(directSpec);
@@ -1104,13 +1247,14 @@ function resolveMaterialForRow(row, pmsMap){
   }
   const cls = (row['Piping Class']||'').toString().trim();
   if(!cls) return {error:'No Material Spec/Grade and no Piping Class given.'};
-  if(!pmsMap) return {error:`Line uses Piping Class "${cls}" but no PMS file was uploaded.`};
-  const pmsRow = pmsMap[cls.toLowerCase()];
-  if(!pmsRow) return {error:`Piping Class "${cls}" not found in the uploaded PMS.`};
+  if(!pmsRows || !pmsRows.length) return {error:`Line uses Piping Class "${cls}" but no PMS file was uploaded.`};
+  const found = findPmsRowForClassAndSize(pmsRows, cls, row['NPS']);
+  if(found.error) return {error:found.error};
+  const pmsRow = found.row;
   const spec = (pmsRow['Material Spec/Grade']||'').toString().trim();
   const idx = findMaterialBySpec(spec);
-  if(idx<0) return {error:`PMS maps class "${cls}" to material "${spec}", which is not found in the Material Database — add it first.`};
-  return {idx, source:`PMS (class ${cls})`, pmsRow};
+  if(idx<0) return {error:`PMS maps class "${cls}" (size ${pmsRow['Size From (NPS)']}"-${pmsRow['Size To (NPS)']}") to material "${spec}", which is not found in the Material Database — add it first.`};
+  return {idx, source:`PMS (class ${cls}, size ${pmsRow['Size From (NPS)']}"-${pmsRow['Size To (NPS)']}")`, pmsRow};
 }
 
 function num(v){ const n = parseFloat(v); return isNaN(n) ? null : n; }
@@ -1140,11 +1284,6 @@ function runBatchCalc(){
     warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>No Line List loaded.</b> Upload a Line List file following the template before running a batch calculation.</div></div>`;
     return;
   }
-  let pmsMap = null;
-  if(batchPmsRows && batchPmsRows.length){
-    pmsMap = {};
-    batchPmsRows.forEach(r=>{ const cls=(r['Piping Class']||'').toString().trim().toLowerCase(); if(cls) pmsMap[cls]=r; });
-  }
 
   const defJointSel = document.getElementById('batch-default-joint').value;
   const defE = parseFloat(defJointSel);
@@ -1158,7 +1297,7 @@ function runBatchCalc(){
     const lineTag = row['Line No / Tag'] || `(row ${i+2})`;
     const rec = {lineTag, raw:row};
 
-    const matRes = resolveMaterialForRow(row, pmsMap);
+    const matRes = resolveMaterialForRow(row, batchPmsRows);
     if(matRes.error){ rec.status='ERROR'; rec.message=matRes.error; results.push(rec); return; }
     const m = materials[matRes.idx];
     rec.material = m.spec;

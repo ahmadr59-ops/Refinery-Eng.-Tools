@@ -153,6 +153,8 @@ footer.legal{margin-top:8px;font-size:11.5px;color:#8A97A0;line-height:1.65;bord
 .badge.pass{background:var(--teal-wash);color:var(--teal);border:1px solid rgba(62,124,110,.35);}
 .badge.fail{background:var(--rust-wash);color:var(--rust);border:1px solid rgba(181,67,46,.35);}
 .badge.info{background:var(--steel-wash);color:var(--steel-dk);border:1px solid rgba(62,107,138,.35);}
+.badge.warn{background:var(--amber-wash,rgba(232,163,61,.15));color:var(--amber-dk);border:1px solid rgba(232,163,61,.4);}
+.badge.muted{background:#EEF0EF;color:#7C8A93;border:1px solid var(--line);}
 
 .sch-panel{padding:20px 22px;border-top:1px solid var(--line);}
 .sch-panel h4{font-family:var(--cond);font-size:14.5px;margin:0 0 10px;}
@@ -382,6 +384,23 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
                 <div class="field">
                   <label>Default Mill Undertolerance (%)</label>
                   <input id="batch-default-mill" type="number" step="0.1" value="12.5">
+                </div>
+              </div>
+            </div>
+          </div>
+          <div class="step">
+            <div class="step-num">4</div>
+            <div class="step-body">
+              <div class="step-title">Verify against contractor's document <span style="color:#8A97A0;font-weight:400;text-transform:none;letter-spacing:0;">(optional)</span></div>
+              <div class="step-desc">If the Line List also carries the contractor's <b>selected Nominal Schedule/WT</b> per line (columns already included in the template), this tool independently recalculates t_min and flags any line where the contractor's thickness falls short — or is unusually over-conservative. Leave a line's contractor column blank to skip verification for it (calculation-only).</div>
+              <div class="grid2">
+                <div class="field">
+                  <label>Flag as WARN if margin below (%) <span class="info-ic" title="Margin = (contractor WT − calculated t_min) / t_min. Below 0% is always FAIL (nonconforming per ASME B31.3 — t must be ≥ t_min). A small positive margin is still compliant but tight; this threshold flags it for a closer look.">ⓘ</span></label>
+                  <input id="batch-warn-margin" type="number" step="0.5" value="5">
+                </div>
+                <div class="field">
+                  <label>Flag as over-conservative above (%) <span class="info-ic" title="Informational only — a very large excess margin is not a code violation, but often signals the wrong class/schedule was picked and may be worth an economy review.">ⓘ</span></label>
+                  <input id="batch-overcons-margin" type="number" step="5" value="75">
                 </div>
               </div>
             </div>
@@ -903,14 +922,15 @@ function switchMode(mode){
 const LINE_LIST_HEADERS = ["Line No / Tag","NPS","Custom OD (mm)","Piping Class","Material Spec/Grade",
   "Design Pressure","Pressure Unit","Design Temperature","Temperature Unit",
   "Joint Type E Override","W Override","Corrosion Allowance Override (mm)",
-  "Mechanical Allowance Override (mm)","Mill Undertolerance Override (%)","Remarks"];
+  "Mechanical Allowance Override (mm)","Mill Undertolerance Override (%)",
+  "Contractor Selected Schedule","Contractor Nominal WT Override (mm)","Remarks"];
 
 const PMS_HEADERS = ["Piping Class","Material Spec/Grade","Joint Type E","W",
   "Corrosion Allowance (mm)","Mechanical Allowance (mm)","Mill Undertolerance (%)","Rating Class","Remarks"];
 
 function downloadLineListTemplate(){
-  const example1 = ["6-P-1042-B3C1","6","","B1C3(N)","","4.2","MPa","350","C","","","","","",""];
-  const example2 = ["2-P-1043-N1F1","2","","N1F1","ASTM A106 Gr. B","9.7","bar","45","C","","","","","",""];
+  const example1 = ["6-P-1042-B3C1","6","","B1C3(N)","","4.2","MPa","350","C","","","","","","40 / STD","","contractor doc says Sch 40"];
+  const example2 = ["2-P-1043-N1F1","2","","N1F1","ASTM A106 Gr. B","9.7","bar","45","C","","","","","","","","calculation only — no contractor value to verify"];
   const ws = XLSX.utils.aoa_to_sheet([LINE_LIST_HEADERS, example1, example2]);
   const instr = XLSX.utils.aoa_to_sheet([
     ["Line List template — instructions"],
@@ -927,9 +947,12 @@ function downloadLineListTemplate(){
     ["Joint Type E Override — optional. Leave blank to take the value from the PMS (if used) or the project default set in Step 3."],
     ["W Override — optional weld strength reduction factor override. Leave blank for PMS/default."],
     ["Corrosion / Mechanical Allowance / Mill Undertolerance Overrides — optional, same logic: blank = PMS value = project default."],
+    ["Contractor Selected Schedule — OPTIONAL, only fill if you are verifying a contractor-issued Pipe Wall Thickness document. Enter the schedule label exactly as in this tool's chart (e.g. '40 / STD', '80 / XS', 'XXS'). If filled, this tool looks up the nominal WT for that schedule/OD and compares it to its own calculated t_min."],
+    ["Contractor Nominal WT Override (mm) — OPTIONAL. Use instead of 'Contractor Selected Schedule' when the contractor's OD is outside this tool's schedule chart (NPS >8\", or a non-standard OD), or when you already know the contractor's nominal WT number directly."],
     ["Remarks — free text, carried through to the output register only."],
     [""],
-    ["Any line that cannot be resolved (missing material, unknown NPS, temperature outside the material's S-table range, or falling into the thick-wall regime) will be flagged in the batch results table and calc register instead of silently skipped."]
+    ["Any line that cannot be resolved (missing material, unknown NPS, temperature outside the material's S-table range, or falling into the thick-wall regime) will be flagged in the batch results table and calc register instead of silently skipped."],
+    ["Leaving both Contractor columns blank runs this line as calculation-only (no verification) — useful for lines you are sizing from scratch rather than checking."]
   ]);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "Line List");
@@ -1052,6 +1075,24 @@ function resolveMaterialForRow(row, pmsMap){
 }
 
 function num(v){ const n = parseFloat(v); return isNaN(n) ? null : n; }
+function fmt2(v){ return (v===null||v===undefined||isNaN(v)) ? '—' : fmt(v); }
+
+// Resolve the contractor's claimed nominal WT for a line, either from a direct override (mm)
+// or by looking up their stated Schedule label against this tool's schedule chart for the same OD.
+// Returns null if the line carries no contractor value at all (verification not requested for this line).
+function resolveContractorWT(row, rowMatch){
+  const override = num(row['Contractor Nominal WT Override (mm)']);
+  if(override!==null && override>0) return {wt:override, source:'override (mm)'};
+  const schLabel = (row['Contractor Selected Schedule']||'').toString().trim();
+  if(!schLabel) return null;
+  if(!rowMatch || !rowMatch.wt || Object.keys(rowMatch.wt).length===0){
+    return {error:`Contractor Schedule "${schLabel}" given but no schedule chart available for this OD — use "Contractor Nominal WT Override (mm)" instead.`};
+  }
+  const norm = s => s.toLowerCase().replace(/\s+/g,'');
+  const key = Object.keys(rowMatch.wt).find(k=>norm(k)===norm(schLabel));
+  if(!key) return {error:`Contractor Schedule "${schLabel}" not recognized for this OD — check spelling (e.g. "40 / STD", "80 / XS", "XXS") or use "Contractor Nominal WT Override (mm)".`};
+  return {wt:rowMatch.wt[key], source:'schedule '+key};
+}
 
 function runBatchCalc(){
   const warnBox = document.getElementById('batch-warning');
@@ -1114,6 +1155,40 @@ function runBatchCalc(){
       rec.schedule = 'manual (no chart for this OD)'; rec.scheduleWT = null;
     }
     rec.status = r.thinWallOK ? 'OK' : 'WARN';
+
+    // ---- Deviation check vs contractor-stated Schedule/WT (optional, per-line) ----
+    const contractorRes = resolveContractorWT(row, r.rowMatch);
+    if(contractorRes && contractorRes.error){
+      rec.deviationStatus = null;
+      rec.deviationNote = contractorRes.error;
+    } else if(contractorRes){
+      const contractorWT = contractorRes.wt;
+      const marginPct = (contractorWT - r.tmin) / r.tmin * 100;
+      rec.contractorWT = contractorWT;
+      rec.contractorSource = contractorRes.source;
+      rec.marginPct = marginPct;
+      const warnMargin = parseFloat(document.getElementById('batch-warn-margin').value);
+      const overMargin = parseFloat(document.getElementById('batch-overcons-margin').value);
+      if(marginPct < 0){
+        rec.deviationStatus = 'FAIL';
+        rec.deviationNote = `Contractor WT ${fmt(contractorWT)} mm is BELOW calculated t_min (${fmt(r.tmin)} mm) — NONCONFORMING, margin ${marginPct.toFixed(1)}%.`;
+      } else if(marginPct < warnMargin){
+        rec.deviationStatus = 'WARN';
+        rec.deviationNote = `Compliant but tight margin (${marginPct.toFixed(1)}%, below the ${warnMargin}% review threshold) — recommend re-checking assumptions (S/E/W/Y, allowances).`;
+      } else if(marginPct > overMargin){
+        rec.deviationStatus = 'INFO';
+        rec.deviationNote = `Compliant, ${marginPct.toFixed(1)}% over t_min — possibly over-conservative class/schedule selection, worth an economy review.`;
+      } else {
+        rec.deviationStatus = 'OK';
+        rec.deviationNote = `Compliant, margin ${marginPct.toFixed(1)}%.`;
+      }
+      // A nonconformance or tight-margin deviation is more serious than a plain thin-wall pass — escalate the row status.
+      if(rec.deviationStatus==='FAIL'){ rec.status='FAIL'; }
+      else if(rec.deviationStatus==='WARN' && rec.status==='OK'){ rec.status='WARN'; }
+    } else {
+      rec.deviationStatus = null; // no contractor value given — calculation-only line
+    }
+
     results.push(rec);
   });
 
@@ -1125,17 +1200,26 @@ function renderBatchResults(results){
   const ok = results.filter(r=>r.status==='OK').length;
   const warn = results.filter(r=>r.status==='WARN').length;
   const fail = results.filter(r=>r.status==='FAIL' || r.status==='ERROR').length;
+  const deviated = results.filter(r=>r.deviationStatus==='FAIL').length;
   document.getElementById('batch-summary').innerHTML =
-    `<span class="badge pass">${ok} OK</span> &nbsp;<span class="badge info">${warn} WARN</span> &nbsp;<span class="badge fail">${fail} ERROR/FAIL</span> &nbsp; <span style="color:#8A97A0;font-family:var(--mono);font-size:12px;">of ${results.length} line(s)</span>`;
+    `<span class="badge pass">${ok} OK</span> &nbsp;<span class="badge warn">${warn} WARN</span> &nbsp;<span class="badge fail">${fail} ERROR/FAIL</span> &nbsp;`+
+    (deviated>0 ? `<span class="badge fail">${deviated} NONCONFORMING vs contractor</span> &nbsp;` : '') +
+    `<span style="color:#8A97A0;font-family:var(--mono);font-size:12px;">of ${results.length} line(s)</span>`;
+
+  const badgeFor = s => s==='OK' ? '<span class="badge pass">OK</span>'
+                     : s==='WARN' ? '<span class="badge warn">WARN</span>'
+                     : s==='INFO' ? '<span class="badge muted">INFO</span>'
+                     : s ? `<span class="badge fail">${s}</span>` : '—';
 
   const rows = results.map(r=>{
     const cls = r.status==='OK' ? 'bstatus-ok' : (r.status==='WARN' ? 'bstatus-warn' : 'bstatus-fail');
-    const badge = r.status==='OK' ? '<span class="badge pass">OK</span>'
-                : r.status==='WARN' ? '<span class="badge info">WARN</span>'
-                : '<span class="badge fail">'+r.status+'</span>';
+    const badge = badgeFor(r.status);
     if(r.message){
-      return `<tr class="${cls}"><td>${r.lineTag}</td><td colspan="9">${r.message}</td><td>${badge}</td></tr>`;
+      return `<tr class="${cls}"><td>${r.lineTag}</td><td colspan="12">${r.message}</td><td>${badge}</td></tr>`;
     }
+    const devCell = r.deviationStatus
+      ? `${badgeFor(r.deviationStatus)}<div style="font-size:10.5px;color:#8A97A0;margin-top:2px;max-width:220px;">${r.deviationNote}</div>`
+      : (r.deviationNote ? `<span class="badge muted">N/A</span><div style="font-size:10.5px;color:#8A97A0;margin-top:2px;max-width:220px;">${r.deviationNote}</div>` : '<span style="color:#C3CBCE;">not verified</span>');
     return `<tr class="${cls}">
       <td>${r.lineTag}</td>
       <td>${r.material}</td>
@@ -1147,11 +1231,14 @@ function renderBatchResults(results){
       <td>${fmt(r.tm)}</td>
       <td><b>${fmt(r.tmin)}</b></td>
       <td>${r.schedule}</td>
+      <td>${fmt2(r.contractorWT)}</td>
+      <td>${r.marginPct!==undefined ? (r.marginPct>=0?'+':'')+r.marginPct.toFixed(1)+'%' : '—'}</td>
+      <td>${devCell}</td>
       <td>${badge}</td>
     </tr>`;
   }).join('');
   document.getElementById('batch-results-table').innerHTML =
-    `<tr><th>Line No / Tag</th><th>Material</th><th>Size</th><th>P / T (design)</th><th>S (MPa)</th><th>E</th><th>t (mm)</th><th>t_m (mm)</th><th>t_min (mm)</th><th>Schedule</th><th>Status</th></tr>${rows}`;
+    `<tr><th>Line No / Tag</th><th>Material</th><th>Size</th><th>P / T (design)</th><th>S (MPa)</th><th>E</th><th>t (mm)</th><th>t_m (mm)</th><th>t_min (mm)</th><th>Schedule (calc.)</th><th>Contractor WT (mm)</th><th>Margin</th><th>Deviation vs contractor</th><th>Status</th></tr>${rows}`;
 
   document.getElementById('results-card').style.display='none';
   document.getElementById('batch-results-card').style.display='block';
@@ -1162,14 +1249,17 @@ function exportBatchCalc(){
   const header = ["Line No / Tag","Material","Material Source","Size / OD (mm)","Design Pressure (MPa)","Design Temp (°C)",
     "S (MPa)","S Reference","E","W","Y","Corrosion Allow. (mm)","Mech. Allow. (mm)","Mill Undertol. (%)",
     "t — pressure design thickness (mm)","t_m — t + allowances (mm)","t_min — min. specified thickness (mm)",
-    "Nearest Schedule","Thin-wall OK?","Status","Notes"];
+    "Nearest Schedule (calc.)","Thin-wall OK?","Contractor WT (mm)","Contractor Source","Margin vs t_min (%)",
+    "Deviation Status","Deviation Note","Status","Notes"];
   const rows = window._lastBatch.map(r=>{
     if(r.message){
-      return [r.lineTag, r.material||'', r.materialSource||'', '', r.P??'', r.tempC??'', '', '', '', '', '', '', '', '', '', '', '', '', '', r.status, r.message];
+      return [r.lineTag, r.material||'', r.materialSource||'', '', r.P??'', r.tempC??'', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', r.status, r.message];
     }
     return [r.lineTag, r.material, r.materialSource, fmt(r.OD), fmt(r.P), fmt(r.tempC),
       fmt(r.S), r.sRef, fmt(r.E), fmt(r.W), fmt(r.Y), fmt(r.c), fmt(r.mech), fmt(r.millPct),
-      fmt(r.t), fmt(r.tm), fmt(r.tmin), r.schedule, r.thinWallOK?'Yes':'No — check thick-wall', r.status, ''];
+      fmt(r.t), fmt(r.tm), fmt(r.tmin), r.schedule, r.thinWallOK?'Yes':'No — check thick-wall',
+      fmt2(r.contractorWT), r.contractorSource||'', r.marginPct!==undefined?r.marginPct.toFixed(1):'',
+      r.deviationStatus||'not verified', r.deviationNote||'', r.status, ''];
   });
   const tbRows = [
     ["Project", document.getElementById('tb-project').value],

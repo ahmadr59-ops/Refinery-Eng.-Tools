@@ -10,86 +10,109 @@
 <style>
 :root{
   --ink:#14202B;
-  --paper:#F4F5F3;
+  --paper:#F0F2F1;
   --panel:#FFFFFF;
-  --line:#D7DBDD;
+  --panel-alt:#F7F8F7;
+  --line:#DCE0E1;
+  --line-soft:#EAEDEC;
   --steel:#3E6B8A;
   --steel-dk:#2A4C63;
+  --steel-wash:#EAF0F3;
   --amber:#E8A33D;
   --amber-dk:#B97B1F;
+  --amber-wash:#FBF3E4;
   --teal:#3E7C6E;
+  --teal-wash:#EAF3F0;
   --rust:#B5432E;
+  --rust-wash:#FBEBE7;
   --mono:'IBM Plex Mono',monospace;
   --sans:'IBM Plex Sans',sans-serif;
   --cond:'IBM Plex Sans Condensed',sans-serif;
+  --sp-1:4px; --sp-2:8px; --sp-3:12px; --sp-4:16px; --sp-5:24px; --sp-6:32px; --sp-7:48px;
+  --radius:6px;
+  --shadow-card:0 1px 2px rgba(20,32,43,.05), 0 1px 8px rgba(20,32,43,.05);
+  --shadow-pop:0 12px 40px rgba(20,32,43,.22);
 }
 *{box-sizing:border-box;}
-body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);}
-.app{display:grid;grid-template-columns:240px 1fr;min-height:100vh;}
+html{font-size:15px;}
+body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);-webkit-font-smoothing:antialiased;}
+.app{display:grid;grid-template-columns:252px 1fr;min-height:100vh;}
+button,input,select{font-family:inherit;transition:border-color .15s ease, background .15s ease, box-shadow .15s ease, color .15s ease, transform .1s ease;}
 
 /* ---- sidebar ---- */
-.sidebar{background:var(--ink);color:#DDE3E7;padding:24px 0;position:sticky;top:0;height:100vh;}
-.brand{padding:0 20px 20px;border-bottom:1px solid rgba(255,255,255,.12);margin-bottom:16px;}
-.brand .mark{font-family:var(--mono);font-weight:700;color:var(--amber);font-size:12px;letter-spacing:.14em;}
-.brand h1{font-family:var(--cond);font-size:21px;margin:4px 0 0;font-weight:700;letter-spacing:.01em;}
-.brand p{font-size:11px;color:#8FA0AC;margin:4px 0 0;line-height:1.4;}
-.nav-group{padding:0 12px;}
-.nav-label{font-family:var(--mono);font-size:10px;letter-spacing:.12em;color:#6E8493;padding:14px 8px 6px;text-transform:uppercase;}
-.nav-item{display:flex;gap:10px;align-items:flex-start;padding:10px 8px;border-radius:4px;font-size:13px;cursor:default;}
-.nav-item.active{background:rgba(232,163,61,.12);border-left:2px solid var(--amber);}
-.nav-item .n{font-family:var(--mono);color:var(--amber);font-weight:600;min-width:20px;}
-.nav-item.disabled{opacity:.38;}
+.sidebar{background:var(--ink);color:#DDE3E7;padding:26px 0;position:sticky;top:0;height:100vh;overflow-y:auto;display:flex;flex-direction:column;}
+.brand{padding:0 22px 22px;border-bottom:1px solid rgba(255,255,255,.10);margin-bottom:18px;}
+.brand .mark{font-family:var(--mono);font-weight:700;color:var(--amber);font-size:11px;letter-spacing:.16em;}
+.brand h1{font-family:var(--cond);font-size:22px;margin:6px 0 0;font-weight:700;letter-spacing:.005em;line-height:1.2;}
+.brand p{font-size:11.5px;color:#8FA0AC;margin:8px 0 0;line-height:1.5;}
+.nav-group{padding:0 14px;flex:1;}
+.nav-label{font-family:var(--mono);font-size:10px;letter-spacing:.14em;color:#5F7482;padding:16px 10px 8px;text-transform:uppercase;}
+.nav-item{display:flex;gap:11px;align-items:flex-start;padding:11px 10px;border-radius:5px;font-size:13px;cursor:default;margin-bottom:2px;}
+.nav-item.active{background:rgba(232,163,61,.13);border-left:2px solid var(--amber);padding-left:8px;}
+.nav-item .n{font-family:var(--mono);color:var(--amber);font-weight:600;min-width:18px;}
+.nav-item.disabled{opacity:.34;}
 .nav-item.disabled .n{color:#6E8493;}
-.sidebar .foot{padding:20px;margin-top:20px;border-top:1px solid rgba(255,255,255,.12);font-size:10.5px;color:#6E8493;line-height:1.5;}
+.nav-item span span{color:#8FA0AC;font-size:11px;}
+.sidebar .foot{padding:18px 22px 0;margin-top:18px;border-top:1px solid rgba(255,255,255,.10);font-size:10.5px;color:#617583;line-height:1.6;}
 
 /* ---- main ---- */
-main{padding:28px 36px 80px;max-width:1180px;}
-.titleblock{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--steel);margin-bottom:22px;}
-.tb-head{display:flex;justify-content:space-between;align-items:center;padding:12px 18px;border-bottom:1px solid var(--line);}
-.tb-head h2{font-family:var(--cond);font-size:19px;margin:0;font-weight:700;}
-.tb-head .std{font-family:var(--mono);font-size:11px;color:var(--steel-dk);background:#EAF0F3;padding:4px 9px;border-radius:3px;}
+main{padding:34px 42px 90px;max-width:1220px;}
+.titleblock{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--steel);margin-bottom:26px;border-radius:2px;box-shadow:var(--shadow-card);}
+.tb-head{display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid var(--line);}
+.tb-head h2{font-family:var(--cond);font-size:20px;margin:0;font-weight:700;}
+.tb-head .std{font-family:var(--mono);font-size:11px;color:var(--steel-dk);background:var(--steel-wash);padding:5px 10px;border-radius:3px;letter-spacing:.02em;}
 .tb-grid{display:grid;grid-template-columns:repeat(4,1fr);}
-.tb-cell{padding:9px 14px;border-right:1px solid var(--line);border-top:1px solid var(--line);}
+.tb-cell{padding:12px 18px;border-right:1px solid var(--line-soft);border-top:1px solid var(--line-soft);}
 .tb-cell:nth-child(4n){border-right:none;}
-.tb-cell label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.08em;color:#7C8A93;text-transform:uppercase;margin-bottom:4px;}
-.tb-cell input{width:100%;border:none;font-family:var(--sans);font-size:13px;padding:2px 0;background:transparent;color:var(--ink);}
+.tb-cell label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;color:#8A97A0;text-transform:uppercase;margin-bottom:6px;}
+.tb-cell input{width:100%;border:none;border-bottom:1px solid transparent;font-family:var(--sans);font-size:13.5px;padding:2px 0 4px;background:transparent;color:var(--ink);}
 .tb-cell input:focus{outline:none;border-bottom:1px solid var(--steel);}
+.tb-cell input::placeholder{color:#C3CACD;}
 
-section.card{background:var(--panel);border:1px solid var(--line);margin-bottom:20px;}
-.card-h{display:flex;justify-content:space-between;align-items:center;padding:13px 18px;border-bottom:1px solid var(--line);background:#FAFBFA;}
-.card-h h3{font-family:var(--cond);font-size:16px;margin:0;font-weight:700;display:flex;align-items:center;gap:8px;}
-.card-h h3 .idx{font-family:var(--mono);color:var(--steel);font-size:13px;}
-.card-body{padding:18px;}
-.hint{font-size:12px;color:#5C6B74;line-height:1.55;}
+section.card{background:var(--panel);border:1px solid var(--line);margin-bottom:26px;border-radius:var(--radius);box-shadow:var(--shadow-card);overflow:hidden;}
+.card-h{display:flex;justify-content:space-between;align-items:center;padding:16px 22px;border-bottom:1px solid var(--line);background:var(--panel-alt);}
+.card-h h3{font-family:var(--cond);font-size:16.5px;margin:0;font-weight:700;display:flex;align-items:center;gap:9px;letter-spacing:.005em;}
+.card-h h3 .idx{font-family:var(--mono);color:var(--steel);font-size:13px;background:var(--steel-wash);padding:2px 7px;border-radius:3px;}
+.card-body{padding:24px;}
+.hint{font-size:12.5px;color:#5C6B74;line-height:1.6;}
 
-.warn{display:flex;gap:9px;background:#FBF3E4;border:1px solid #EFD9A8;border-left:3px solid var(--amber-dk);padding:10px 13px;font-size:12px;color:#6B4E13;margin:10px 0;line-height:1.5;}
+.warn{display:flex;gap:10px;background:var(--amber-wash);border:1px solid #EFD9A8;border-left:3px solid var(--amber-dk);border-radius:4px;padding:12px 15px;font-size:12.5px;color:#6B4E13;margin:14px 0;line-height:1.55;}
 .warn b{color:var(--amber-dk);}
-.danger{display:flex;gap:9px;background:#FBEBE7;border:1px solid #E7BEB2;border-left:3px solid var(--rust);padding:10px 13px;font-size:12.5px;color:#7A2E1D;margin:10px 0;line-height:1.5;}
+.danger{display:flex;gap:10px;background:var(--rust-wash);border:1px solid #E7BEB2;border-left:3px solid var(--rust);border-radius:4px;padding:12px 15px;font-size:12.5px;color:#7A2E1D;margin:14px 0;line-height:1.55;}
 
 table.data{width:100%;border-collapse:collapse;font-size:12.5px;}
-table.data th{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:#7C8A93;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);white-space:nowrap;}
-table.data td{padding:4px 8px;border-bottom:1px solid #EEF0EF;}
-table.data input,table.data select{width:100%;border:1px solid transparent;background:transparent;font-family:var(--mono);font-size:12.5px;padding:5px 6px;border-radius:3px;color:var(--ink);}
-table.data input:focus,table.data select:focus{outline:none;border-color:var(--steel);background:#fff;}
-table.data input.empty{background:#FBEBE7;border-color:#E7BEB2;}
-table.data tr:hover td{background:#FAFBFA;}
-.del-btn{background:none;border:none;color:#B0393A;cursor:pointer;font-size:15px;line-height:1;padding:2px 6px;}
-.small-btn{font-family:var(--mono);font-size:11px;padding:6px 12px;border-radius:3px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--steel-dk);}
-.small-btn:hover{border-color:var(--steel);}
+table.data th{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;letter-spacing:.06em;color:#7C8A93;text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);white-space:nowrap;background:var(--panel-alt);}
+table.data td{padding:5px 9px;border-bottom:1px solid var(--line-soft);}
+table.data tr:nth-child(even) td{background:#FCFDFC;}
+table.data input,table.data select{width:100%;border:1px solid transparent;background:transparent;font-family:var(--mono);font-size:12.5px;padding:6px 7px;border-radius:3px;color:var(--ink);}
+table.data input:focus,table.data select:focus{outline:none;border-color:var(--steel);background:#fff;box-shadow:0 0 0 2px rgba(62,107,138,.10);}
+table.data input.empty{background:var(--rust-wash);border-color:#E7BEB2;}
+table.data tr:hover td{background:var(--steel-wash);}
+.del-btn{background:none;border:none;color:#B0393A;cursor:pointer;font-size:16px;line-height:1;padding:3px 7px;border-radius:3px;}
+.del-btn:hover{background:var(--rust-wash);}
+.small-btn{font-family:var(--cond);font-weight:700;font-size:12.5px;padding:9px 16px;border-radius:4px;border:1px solid var(--line);background:#fff;cursor:pointer;color:var(--steel-dk);letter-spacing:.01em;box-shadow:var(--shadow-card);}
+.small-btn:hover{border-color:var(--steel);color:var(--ink);transform:translateY(-1px);}
+.small-btn:active{transform:translateY(0);}
 
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px 24px;}
-.field{margin-bottom:14px;}
-.field label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:#5C6B74;margin-bottom:5px;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px 28px;}
+.field{margin-bottom:20px;}
+.field label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:#5C6B74;margin-bottom:7px;text-transform:uppercase;}
 .field label .req{color:var(--rust);}
-.field input,.field select{width:100%;padding:8px 10px;border:1px solid var(--line);border-radius:3px;font-family:var(--mono);font-size:13.5px;background:#fff;color:var(--ink);}
-.field input:focus,.field select:focus{outline:none;border-color:var(--steel);box-shadow:0 0 0 2px rgba(62,107,138,.12);}
-.field .sub{font-size:11px;color:#8A97A0;margin-top:4px;}
+.field input,.field select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:4px;font-family:var(--mono);font-size:13.5px;background:#fff;color:var(--ink);}
+.field input:focus,.field select:focus{outline:none;border-color:var(--steel);box-shadow:0 0 0 3px rgba(62,107,138,.12);}
+.field .sub{font-size:11.5px;color:#8A97A0;margin-top:6px;line-height:1.5;}
 .unit-row{display:flex;gap:0;}
 .unit-row input{border-top-right-radius:0;border-bottom-right-radius:0;flex:1;}
-.unit-row select{width:70px;border-top-left-radius:0;border-bottom-left-radius:0;border-left:none;}
+.unit-row select{width:76px;border-top-left-radius:0;border-bottom-left-radius:0;border-left:none;}
 
-.calc-btn{font-family:var(--cond);font-weight:700;font-size:15px;letter-spacing:.02em;background:var(--steel-dk);color:#fff;border:none;padding:13px 22px;border-radius:3px;cursor:pointer;width:100%;}
-.calc-btn:hover{background:var(--ink);}
+input[type=file]{width:100%;padding:9px 10px;border:1px solid var(--line);border-radius:4px;font-family:var(--sans);font-size:12.5px;background:#fff;color:#5C6B74;}
+input[type=file]:hover{border-color:var(--steel);}
+input[type=file]::file-selector-button{font-family:var(--cond);font-weight:700;font-size:12px;padding:7px 14px;margin-right:12px;border:none;border-radius:4px;background:var(--steel-dk);color:#fff;cursor:pointer;}
+input[type=file]::file-selector-button:hover{background:var(--ink);}
+
+.calc-btn{font-family:var(--cond);font-weight:700;font-size:15.5px;letter-spacing:.02em;background:var(--steel-dk);color:#fff;border:none;padding:15px 24px;border-radius:5px;cursor:pointer;width:100%;box-shadow:0 2px 10px rgba(42,76,99,.28);}
+.calc-btn:hover{background:var(--ink);transform:translateY(-1px);box-shadow:0 4px 14px rgba(20,32,43,.3);}
+.calc-btn:active{transform:translateY(0);}
 
 .result-band{background:var(--ink);color:#fff;padding:20px;display:grid;grid-template-columns:repeat(3,1fr);gap:0;}
 .result-band .r{padding:0 20px;border-right:1px solid rgba(255,255,255,.14);}
@@ -98,58 +121,77 @@ table.data tr:hover td{background:#FAFBFA;}
 .result-band .r .val{font-family:var(--mono);font-size:24px;font-weight:600;color:var(--amber);margin-top:4px;}
 .result-band .r .val .u{font-size:13px;color:#DDE3E7;font-weight:400;margin-left:4px;}
 
-.steps{font-family:var(--mono);font-size:12.5px;line-height:2;padding:16px 18px;background:#FAFBFA;border-top:1px solid var(--line);white-space:pre-wrap;}
+.steps{font-family:var(--mono);font-size:12.5px;line-height:2;padding:18px 22px;background:var(--panel-alt);border-top:1px solid var(--line);white-space:pre-wrap;}
 .steps .eq{color:var(--steel-dk);}
 
 .status-pass{color:var(--teal);font-weight:600;}
 .status-fail{color:var(--rust);font-weight:600;}
 
-footer.legal{margin-top:30px;font-size:11px;color:#8A97A0;line-height:1.6;border-top:1px solid var(--line);padding-top:14px;}
+footer.legal{margin-top:8px;font-size:11.5px;color:#8A97A0;line-height:1.65;border-top:1px solid var(--line);padding-top:18px;}
 
 /* ---- top bar / db button ---- */
-.topbar{display:flex;justify-content:flex-end;margin-bottom:14px;}
-.topbar .small-btn{display:flex;align-items:center;gap:6px;}
+.topbar{display:flex;justify-content:flex-end;margin-bottom:16px;}
+.topbar .small-btn{display:flex;align-items:center;gap:7px;}
 
 /* ---- modal ---- */
-.modal-overlay{display:none;position:fixed;inset:0;background:rgba(20,32,43,.55);z-index:50;align-items:flex-start;justify-content:center;padding:40px 24px;overflow-y:auto;}
+.modal-overlay{display:none;position:fixed;inset:0;background:rgba(20,32,43,.55);z-index:50;align-items:flex-start;justify-content:center;padding:40px 24px;overflow-y:auto;backdrop-filter:blur(1px);}
 .modal-overlay.open{display:flex;}
-.modal-box{background:var(--panel);width:100%;max-width:1100px;border-radius:4px;box-shadow:0 20px 60px rgba(0,0,0,.35);}
-.modal-box .card-h{border-radius:4px 4px 0 0;}
-.modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:#7C8A93;padding:2px 8px;}
-.modal-close:hover{color:var(--ink);}
+.modal-box{background:var(--panel);width:100%;max-width:1120px;border-radius:8px;box-shadow:var(--shadow-pop);}
+.modal-box .card-h{border-radius:8px 8px 0 0;}
+.modal-close{background:none;border:none;font-size:18px;cursor:pointer;color:#7C8A93;padding:4px 9px;border-radius:4px;}
+.modal-close:hover{color:var(--ink);background:var(--line-soft);}
 
 /* ---- result card v2 ---- */
-.result-hero{background:var(--ink);color:#fff;padding:22px 24px;display:flex;justify-content:space-between;align-items:flex-start;gap:20px;flex-wrap:wrap;}
+.result-hero{background:var(--ink);color:#fff;padding:24px 26px;display:flex;justify-content:space-between;align-items:flex-start;gap:22px;flex-wrap:wrap;}
 .result-hero .metric{flex:1;min-width:150px;}
 .result-hero .metric .lab{font-family:var(--mono);font-size:10px;color:#8FA0AC;letter-spacing:.08em;text-transform:uppercase;}
-.result-hero .metric .val{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--amber);margin-top:4px;}
+.result-hero .metric .val{font-family:var(--mono);font-size:26px;font-weight:600;color:var(--amber);margin-top:6px;}
 .result-hero .metric .val .u{font-size:13px;color:#DDE3E7;font-weight:400;margin-left:4px;}
 .result-hero .metric.hero .val{color:#fff;font-size:32px;}
 
-.badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:12px;font-weight:600;padding:5px 12px;border-radius:20px;}
-.badge.pass{background:rgba(62,124,110,.15);color:var(--teal);border:1px solid rgba(62,124,110,.4);}
-.badge.fail{background:rgba(181,67,46,.15);color:var(--rust);border:1px solid rgba(181,67,46,.4);}
-.badge.info{background:rgba(62,107,138,.15);color:var(--steel-dk);border:1px solid rgba(62,107,138,.4);}
+.badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:20px;letter-spacing:.02em;}
+.badge.pass{background:var(--teal-wash);color:var(--teal);border:1px solid rgba(62,124,110,.35);}
+.badge.fail{background:var(--rust-wash);color:var(--rust);border:1px solid rgba(181,67,46,.35);}
+.badge.info{background:var(--steel-wash);color:var(--steel-dk);border:1px solid rgba(62,107,138,.35);}
 
-.sch-panel{padding:18px;border-top:1px solid var(--line);}
-.sch-panel h4{font-family:var(--cond);font-size:14px;margin:0 0 10px;}
+.sch-panel{padding:20px 22px;border-top:1px solid var(--line);}
+.sch-panel h4{font-family:var(--cond);font-size:14.5px;margin:0 0 10px;}
 table.sch{width:100%;border-collapse:collapse;font-size:12.5px;}
-table.sch th{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;color:#7C8A93;text-align:left;padding:6px 8px;border-bottom:1px solid var(--line);}
-table.sch td{padding:6px 8px;border-bottom:1px solid #EEF0EF;font-family:var(--mono);}
-table.sch tr.selected td{background:#EAF0F3;font-weight:600;}
+table.sch th{font-family:var(--mono);font-size:9.5px;text-transform:uppercase;color:#7C8A93;text-align:left;padding:8px 9px;border-bottom:1px solid var(--line);}
+table.sch td{padding:7px 9px;border-bottom:1px solid var(--line-soft);font-family:var(--mono);}
+table.sch tr:nth-child(even) td{background:#FCFDFC;}
+table.sch tr.selected td{background:var(--steel-wash);font-weight:600;}
 table.sch tr.selected td:first-child{border-left:3px solid var(--steel);}
 
-/* ---- mode tabs ---- */
-.mode-tabs{display:flex;gap:2px;margin-bottom:-1px;position:relative;z-index:1;}
-.mode-tab{font-family:var(--cond);font-weight:700;font-size:13.5px;padding:10px 18px;background:#EAEDEC;border:1px solid var(--line);border-bottom:none;border-radius:4px 4px 0 0;color:#5C6B74;cursor:pointer;}
-.mode-tab.active{background:var(--panel);color:var(--ink);border-bottom:1px solid var(--panel);}
-.mode-tab:hover:not(.active){background:#F4F5F3;color:var(--ink);}
+/* ---- mode segmented control ---- */
+.mode-tabs{display:inline-flex;gap:3px;background:var(--line-soft);padding:4px;border-radius:7px;margin-bottom:22px;}
+.mode-tab{font-family:var(--cond);font-weight:700;font-size:13px;padding:9px 20px;background:transparent;border:none;border-radius:5px;color:#5C6B74;cursor:pointer;letter-spacing:.01em;}
+.mode-tab.active{background:var(--panel);color:var(--steel-dk);box-shadow:var(--shadow-card);}
+.mode-tab:hover:not(.active){color:var(--ink);}
 
 table.sch tr.bstatus-ok td{color:var(--teal);}
 table.sch tr.bstatus-fail td{color:var(--rust);}
 table.sch tr.bstatus-warn td{color:var(--amber-dk);}
 .file-ok{color:var(--teal);font-weight:600;}
 .file-err{color:var(--rust);font-weight:600;}
+
+/* ---- step list (batch workflow) ---- */
+.step-list{display:flex;flex-direction:column;}
+.step{display:flex;gap:18px;padding:22px 0;border-bottom:1px solid var(--line-soft);}
+.step:last-of-type{border-bottom:none;padding-bottom:6px;}
+.step:first-child{padding-top:2px;}
+.step-num{flex:0 0 auto;width:30px;height:30px;border-radius:50%;background:var(--steel-dk);color:#fff;display:flex;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:13px;}
+.step-body{flex:1;min-width:0;}
+.step-title{font-family:var(--cond);font-weight:700;font-size:15px;margin-bottom:4px;}
+.step-desc{font-size:12.5px;color:#5C6B74;line-height:1.6;margin-bottom:14px;}
+.step-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;}
+
+/* ---- field grouping + inline tooltips ---- */
+.group-label{grid-column:1/-1;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;color:var(--steel-dk);text-transform:uppercase;padding-bottom:8px;margin-top:4px;border-bottom:1px solid var(--line-soft);}
+.grid2 .group-label:first-child{margin-top:0;}
+.info-ic{cursor:help;color:#9AA6AC;font-size:12px;font-weight:400;text-transform:none;letter-spacing:0;}
+.info-ic:hover{color:var(--steel);}
+.unit-suffix{display:flex;align-items:center;padding:0 12px;border:1px solid var(--line);border-left:none;background:var(--panel-alt);font-family:var(--mono);font-size:13px;border-top-right-radius:4px;border-bottom-right-radius:4px;color:#5C6B74;}
 </style>
 </head>
 <body>
@@ -195,11 +237,6 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
       <button class="small-btn" onclick="openDbModal()">⚙ Material Database</button>
     </div>
 
-    <div class="danger" id="global-data-warning">
-      <div>⚠</div>
-      <div><b>Data integrity notice.</b> Allowable stress (S) values were transcribed from the ASME B31.3-2024 pages you supplied — spot-check before relying on this for a real deliverable. Joint factor (E), weld strength factor (W), Y-coefficient, and standard pipe Schedule dimensions are pre-filled reference values — verify against Tables A-1B / 302.3.5 / 304.1.1 and ASME B36.10M/B36.19M in your copy. Open <b>Material Database</b> above to review sources or add data.</div>
-    </div>
-
     <!-- MODE TABS -->
     <div class="mode-tabs">
       <button class="mode-tab active" id="tab-single" onclick="switchMode('single')">Single Line (manual)</button>
@@ -211,6 +248,7 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
       <div class="card-h"><h3><span class="idx">A.</span>Calculation Inputs — Single Line</h3></div>
       <div class="card-body">
         <div class="grid2">
+          <div class="group-label">Design conditions</div>
           <div class="field">
             <label>Material <span class="req">*</span></label>
             <select id="in-material" onchange="onMaterialChange()"></select>
@@ -224,17 +262,20 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
             <label>Design Pressure (internal) <span class="req">*</span></label>
             <div class="unit-row"><input id="in-press" type="number" placeholder="e.g. 4.2"><select id="in-press-unit"><option value="MPa">MPa</option><option value="bar">bar</option><option value="psi">psi</option><option value="kPa">kPa</option></select></div>
           </div>
+
+          <div class="group-label">Geometry</div>
           <div class="field">
-            <label>Nominal Pipe Size (NPS)</label>
+            <label>Nominal Pipe Size (NPS) <span class="info-ic" title="Selecting an NPS fills the OD from ASME B36.10M/19M. Choose the blank / Custom OD option for non-standard pipe.">ⓘ</span></label>
             <select id="in-nps" onchange="onNpsChange()"></select>
-            <div class="sub">Selecting an NPS fills the OD from ASME B36.10M/19M. Switch to "Custom OD" for non-standard pipe.</div>
           </div>
           <div class="field">
             <label>Outside Diameter (OD) <span class="req">*</span></label>
             <div class="unit-row"><input id="in-od" type="number" placeholder="e.g. 168.3"><select id="in-od-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
           </div>
+
+          <div class="group-label">Joint, allowances &amp; tolerance</div>
           <div class="field">
-            <label>Joint Type → Quality Factor E</label>
+            <label>Joint Type → Quality Factor E <span class="info-ic" title="Values per Table A-1B / §302.3.4 as commonly published — ERW is a fixed factor and cannot be increased by additional examination. Cross-check exact line/page against your licensed copy.">ⓘ</span></label>
             <select id="in-joint" onchange="onJointChange()">
               <option value="1.00">Seamless — E = 1.00</option>
               <option value="1.00-efw">EFW, double-welded, 100% RT — E = 1.00</option>
@@ -247,27 +288,22 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
               <option value="custom">Custom / from Table A-1B…</option>
             </select>
             <input id="in-joint-custom" type="number" step="0.01" placeholder="E value" style="margin-top:6px;display:none;">
-            <div class="sub">Values per Table A-1B / §302.3.4 as commonly published — ERW is a fixed factor and cannot be increased by additional examination. Cross-check exact line/page against your licensed copy.</div>
           </div>
           <div class="field">
-            <label>Weld Strength Reduction Factor W</label>
+            <label>Weld Strength Reduction Factor W <span class="info-ic" title="Default 1.00. Reduce per Table 302.3.5 only for longitudinal/spiral welds in the creep range (typically > 425°C / 800°F depending on material). Verify applicability.">ⓘ</span></label>
             <input id="in-w" type="number" step="0.01" value="1.00">
-            <div class="sub">Default 1.00. Reduce per Table 302.3.5 only for longitudinal/spiral welds in the creep range (typically &gt; 425°C / 800°F depending on material). Verify applicability.</div>
           </div>
           <div class="field">
-            <label>Corrosion / Erosion Allowance, c <span class="req">*</span></label>
+            <label>Corrosion / Erosion Allowance, c <span class="req">*</span> <span class="info-ic" title="Engineering judgment input — corrosivity of service, expected life. Not from a standard table.">ⓘ</span></label>
             <div class="unit-row"><input id="in-corr" type="number" value="3.0"><select id="in-corr-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
-            <div class="sub">Engineering judgment input — corrosivity of service, expected life. Not from a standard table.</div>
           </div>
           <div class="field">
-            <label>Mechanical / Thread / Groove Allowance</label>
+            <label>Mechanical / Thread / Groove Allowance <span class="info-ic" title="Only applies to threaded, grooved, or bored components (§304.1.2(a)(3)).">ⓘ</span></label>
             <div class="unit-row"><input id="in-mech" type="number" value="0"><select id="in-mech-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
-            <div class="sub">Only applies to threaded, grooved, or bored components (§304.1.2(a)(3)).</div>
           </div>
           <div class="field">
-            <label>Mill Undertolerance</label>
-            <div class="unit-row"><input id="in-mill" type="number" value="12.5" style="flex:1"><span style="display:flex;align-items:center;padding:0 10px;border:1px solid var(--line);border-left:none;background:#F4F5F3;font-family:var(--mono);font-size:13px;">%</span></div>
-            <div class="sub">12.5% is the common ASTM seamless-pipe default (e.g. A106/A335). Verify against the applicable ASTM spec for your selected material — plate/welded pipe tolerances differ.</div>
+            <label>Mill Undertolerance <span class="info-ic" title="12.5% is the common ASTM seamless-pipe default (e.g. A106/A335). Verify against the applicable ASTM spec for your selected material — plate/welded pipe tolerances differ.">ⓘ</span></label>
+            <div class="unit-row"><input id="in-mill" type="number" value="12.5" style="flex:1"><span class="unit-suffix">%</span></div>
           </div>
         </div>
         <button class="calc-btn" onclick="runCalc()">Calculate required wall thickness</button>
@@ -279,61 +315,75 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
     <section class="card" id="panel-batch" style="display:none;">
       <div class="card-h"><h3><span class="idx">A.</span>Batch Calculation — Line List Import</h3></div>
       <div class="card-body">
-        <p class="hint">Use this mode to calculate wall thickness for every line in a Line List in one pass. Each line's material can come either directly from a <b>Material Spec/Grade</b> column in the Line List itself, or — if the Line List only carries a <b>Piping Class</b> code — from a <b>PMS (Piping Material Specification)</b> file that maps Class → Material/Corrosion Allowance/Joint Type. Both files must follow the column templates below (fixed headers so the parser can read them reliably).</p>
+        <p class="hint">Calculate wall thickness for every line in a Line List in one pass. Each line's material can come either directly from a <b>Material Spec/Grade</b> column in the Line List itself, or — if the Line List only carries a <b>Piping Class</b> code — from a <b>PMS</b> file that maps Class → Material/Corrosion Allowance/Joint Type.</p>
 
-        <div class="warn"><div>⚠</div><div>Every material referenced by the Line List or PMS must already exist in the <b>Material Database</b> (Section above the calculator) with a populated S-table, using the <i>exact same</i> Spec/Grade text. Add missing materials there before running a batch.</div></div>
+        <div class="warn"><div>⚠</div><div>Every material referenced by the Line List or PMS must already exist in the <b>Material Database</b> (top of page) with a populated S-table, using the <i>exact same</i> Spec/Grade text.</div></div>
 
-        <div class="grid2" style="margin-top:6px;">
-          <div class="field">
-            <label>Step 1 — Templates</label>
-            <div style="display:flex;gap:8px;flex-wrap:wrap;">
-              <button class="small-btn" onclick="downloadLineListTemplate()">⬇ Line List template (.xlsx)</button>
-              <button class="small-btn" onclick="downloadPmsTemplate()">⬇ PMS template (.xlsx)</button>
+        <div class="step-list">
+          <div class="step">
+            <div class="step-num">1</div>
+            <div class="step-body">
+              <div class="step-title">Get the templates</div>
+              <div class="step-desc">Fixed column headers so the parser reads them reliably — download, fill in your project data, then upload below. Each includes an Instructions tab and an example row.</div>
+              <div class="step-row">
+                <button class="small-btn" onclick="downloadLineListTemplate()">⬇ Line List template (.xlsx)</button>
+                <button class="small-btn" onclick="downloadPmsTemplate()">⬇ PMS template (.xlsx)</button>
+              </div>
             </div>
-            <div class="sub">Download, fill in your project data following the column headers exactly (an Instructions tab and example row are included), then upload below.</div>
           </div>
-          <div class="field">
-            <label>Step 2 — Upload Line List <span class="req">*</span></label>
-            <input type="file" id="in-linelist-file" accept=".xlsx,.xls" onchange="onLineListFileChosen(event)">
-            <div class="sub" id="linelist-file-status">No file loaded.</div>
+          <div class="step">
+            <div class="step-num">2</div>
+            <div class="step-body">
+              <div class="step-title">Upload your files</div>
+              <div class="step-desc">PMS is only required if the Line List identifies lines by Piping Class rather than stating Material Spec/Grade directly.</div>
+              <div class="grid2">
+                <div class="field">
+                  <label>Line List <span class="req">*</span></label>
+                  <input type="file" id="in-linelist-file" accept=".xlsx,.xls" onchange="onLineListFileChosen(event)">
+                  <div class="sub" id="linelist-file-status">No file loaded.</div>
+                </div>
+                <div class="field">
+                  <label>PMS <span style="color:#8A97A0;font-weight:400;text-transform:none;">(optional)</span></label>
+                  <input type="file" id="in-pms-file" accept=".xlsx,.xls" onchange="onPmsFileChosen(event)">
+                  <div class="sub" id="pms-file-status">No file loaded — not required if Material Spec/Grade is stated per line.</div>
+                </div>
+              </div>
+            </div>
           </div>
-          <div class="field">
-            <label>Step 2b — Upload PMS (optional — only if Line List uses Piping Class codes)</label>
-            <input type="file" id="in-pms-file" accept=".xlsx,.xls" onchange="onPmsFileChosen(event)">
-            <div class="sub" id="pms-file-status">No file loaded. Not required if the Line List already states Material Spec/Grade per line.</div>
-          </div>
-        </div>
-
-        <div class="field" style="margin-top:4px;">
-          <label>Step 3 — Project-wide fallback defaults</label>
-          <div class="sub" style="margin-bottom:8px;">Used only for a line/class that doesn't specify its own value. Per-line values in the Line List (or PMS) always take priority over these.</div>
-          <div class="grid2">
-            <div class="field">
-              <label>Default Joint Type / E (if not given per line or via PMS)</label>
-              <select id="batch-default-joint">
-                <option value="1.00">Seamless — E = 1.00</option>
-                <option value="1.00-efw">EFW, double-welded, 100% RT — E = 1.00</option>
-                <option value="0.90">EFW, double-welded, spot RT — E = 0.90</option>
-                <option value="0.80">EFW, double-welded, no RT — E = 0.80</option>
-                <option value="0.85">ERW (fixed) — E = 0.85</option>
-                <option value="0.60">Furnace butt-welded — E = 0.60</option>
-              </select>
-            </div>
-            <div class="field">
-              <label>Default W (weld strength reduction)</label>
-              <input id="batch-default-w" type="number" step="0.01" value="1.00">
-            </div>
-            <div class="field">
-              <label>Default Corrosion Allowance, c (mm)</label>
-              <input id="batch-default-corr" type="number" step="0.1" value="3.0">
-            </div>
-            <div class="field">
-              <label>Default Mechanical Allowance (mm)</label>
-              <input id="batch-default-mech" type="number" step="0.1" value="0">
-            </div>
-            <div class="field">
-              <label>Default Mill Undertolerance (%)</label>
-              <input id="batch-default-mill" type="number" step="0.1" value="12.5">
+          <div class="step">
+            <div class="step-num">3</div>
+            <div class="step-body">
+              <div class="step-title">Project-wide fallback defaults</div>
+              <div class="step-desc">Used only when a line/class doesn't specify its own value — per-line values in the Line List (or PMS) always take priority.</div>
+              <div class="grid2">
+                <div class="field">
+                  <label>Default Joint Type / E</label>
+                  <select id="batch-default-joint">
+                    <option value="1.00">Seamless — E = 1.00</option>
+                    <option value="1.00-efw">EFW, double-welded, 100% RT — E = 1.00</option>
+                    <option value="0.90">EFW, double-welded, spot RT — E = 0.90</option>
+                    <option value="0.80">EFW, double-welded, no RT — E = 0.80</option>
+                    <option value="0.85">ERW (fixed) — E = 0.85</option>
+                    <option value="0.60">Furnace butt-welded — E = 0.60</option>
+                  </select>
+                </div>
+                <div class="field">
+                  <label>Default W (weld strength reduction)</label>
+                  <input id="batch-default-w" type="number" step="0.01" value="1.00">
+                </div>
+                <div class="field">
+                  <label>Default Corrosion Allowance, c (mm)</label>
+                  <input id="batch-default-corr" type="number" step="0.1" value="3.0">
+                </div>
+                <div class="field">
+                  <label>Default Mechanical Allowance (mm)</label>
+                  <input id="batch-default-mech" type="number" step="0.1" value="0">
+                </div>
+                <div class="field">
+                  <label>Default Mill Undertolerance (%)</label>
+                  <input id="batch-default-mill" type="number" step="0.1" value="12.5">
+                </div>
+              </div>
             </div>
           </div>
         </div>
@@ -406,6 +456,10 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
     </div>
 
     <footer class="legal">
+      <div class="danger" style="margin:0 0 16px;">
+        <div>⚠</div>
+        <div><b>Data integrity notice.</b> Allowable stress (S) values were transcribed from the ASME B31.3-2024 pages you supplied — spot-check before relying on this for a real deliverable. Joint factor (E), weld strength factor (W), Y-coefficient, and standard pipe Schedule dimensions are pre-filled reference values — verify against Tables A-1B / 302.3.5 / 304.1.1 and ASME B36.10M/B36.19M in your copy. Open <b>Material Database</b> above to review sources or add data.</div>
+      </div>
       <b>Scope &amp; limitations:</b> This module implements the thin-wall straight-pipe formula of ASME B31.3 §304.1.2(a), Eq. 3a (t = PD / 2(SEW+PY)). It does not implement the thick-wall equation §304.1.2(b) — the tool will flag and stop if your inputs fall into that regime. It does not cover bends, miters, branch reinforcement, or external pressure (collapse). The Schedule-matching table covers NPS 1/2"–8" only; larger sizes show OD for reference but require manual schedule selection against ASME B36.10M/19M. This is a personal calculation aid; it is not a substitute for review and sign-off by a qualified engineer against the current, licensed edition of ASME B31.3, and applicable project specifications.
     </footer>
   </main>

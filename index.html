@@ -57,7 +57,7 @@ button,input,select{font-family:inherit;transition:border-color .15s ease, backg
 
 /* ---- main ---- */
 main{padding:34px 42px 90px;max-width:1220px;}
-.titleblock{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--steel);margin-bottom:26px;border-radius:2px;box-shadow:var(--shadow-card);}
+.titleblock{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--steel);border-bottom:none;margin-bottom:0;border-radius:2px 2px 0 0;box-shadow:var(--shadow-card);}
 .tb-head{display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid var(--line);}
 .tb-head h2{font-family:var(--cond);font-size:20px;margin:0;font-weight:700;}
 .tb-head .std{font-family:var(--mono);font-size:11px;color:var(--steel-dk);background:var(--steel-wash);padding:5px 10px;border-radius:3px;letter-spacing:.02em;}
@@ -70,10 +70,11 @@ main{padding:34px 42px 90px;max-width:1220px;}
 .tb-cell input::placeholder{color:#C3CACD;}
 
 section.card{background:var(--panel);border:1px solid var(--line);margin-bottom:26px;border-radius:var(--radius);box-shadow:var(--shadow-card);overflow:hidden;}
+section.card.attached{margin-top:0;border-top:none;border-radius:0 0 var(--radius) var(--radius);}
 .card-h{display:flex;justify-content:space-between;align-items:center;padding:16px 22px;border-bottom:1px solid var(--line);background:var(--panel-alt);}
 .card-h h3{font-family:var(--cond);font-size:16.5px;margin:0;font-weight:700;display:flex;align-items:center;gap:9px;letter-spacing:.005em;}
 .card-h h3 .idx{font-family:var(--mono);color:var(--steel);font-size:13px;background:var(--steel-wash);padding:2px 7px;border-radius:3px;}
-.card-body{padding:24px;}
+.card-body{padding:20px 24px;}
 .hint{font-size:12.5px;color:#5C6B74;line-height:1.6;}
 
 .warn{display:flex;gap:10px;background:var(--amber-wash);border:1px solid #EFD9A8;border-left:3px solid var(--amber-dk);border-radius:4px;padding:12px 15px;font-size:12.5px;color:#6B4E13;margin:14px 0;line-height:1.55;}
@@ -94,9 +95,9 @@ table.data tr:hover td{background:var(--steel-wash);}
 .small-btn:hover{border-color:var(--steel);color:var(--ink);transform:translateY(-1px);}
 .small-btn:active{transform:translateY(0);}
 
-.grid2{display:grid;grid-template-columns:1fr 1fr;gap:20px 28px;}
-.field{margin-bottom:20px;}
-.field label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:#5C6B74;margin-bottom:7px;text-transform:uppercase;}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 24px;}
+.field{margin-bottom:8px;}
+.field label{display:block;font-family:var(--mono);font-size:10.5px;letter-spacing:.05em;color:#5C6B74;margin-bottom:5px;text-transform:uppercase;}
 .field label .req{color:var(--rust);}
 .field input,.field select{width:100%;padding:10px 12px;border:1px solid var(--line);border-radius:4px;font-family:var(--mono);font-size:13.5px;background:#fff;color:var(--ink);}
 .field input:focus,.field select:focus{outline:none;border-color:var(--steel);box-shadow:0 0 0 3px rgba(62,107,138,.12);}
@@ -218,6 +219,12 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
   </aside>
 
   <main>
+    <!-- MODE TABS -->
+    <div class="mode-tabs">
+      <button class="mode-tab active" id="tab-single" onclick="switchMode('single')">Single Line (manual)</button>
+      <button class="mode-tab" id="tab-batch" onclick="switchMode('batch')">Batch Import (Line List / PMS)</button>
+    </div>
+
     <div class="titleblock">
       <div class="tb-head">
         <h2>Pipe Wall Thickness Calculation</h2>
@@ -235,18 +242,8 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
       </div>
     </div>
 
-    <div class="topbar">
-      <button class="small-btn" onclick="openDbModal()">⚙ Material Database</button>
-    </div>
-
-    <!-- MODE TABS -->
-    <div class="mode-tabs">
-      <button class="mode-tab active" id="tab-single" onclick="switchMode('single')">Single Line (manual)</button>
-      <button class="mode-tab" id="tab-batch" onclick="switchMode('batch')">Batch Import (Line List / PMS)</button>
-    </div>
-
     <!-- CALCULATION INPUTS : SINGLE LINE -->
-    <section class="card" id="panel-single">
+    <section class="card attached" id="panel-single">
       <div class="card-h"><h3><span class="idx">A.</span>Calculation Inputs — Single Line</h3></div>
       <div class="card-body">
         <div class="grid2">
@@ -314,7 +311,7 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
     </section>
 
     <!-- BATCH IMPORT PANEL -->
-    <section class="card" id="panel-batch" style="display:none;">
+    <section class="card attached" id="panel-batch" style="display:none;">
       <div class="card-h"><h3><span class="idx">A.</span>Batch Calculation — Line List Import</h3></div>
       <div class="card-body">
         <p class="hint">Calculate wall thickness for every line in a Line List in one pass. Each line's material can come either directly from a <b>Material Spec/Grade</b> column in the Line List itself, or — if the Line List only carries a <b>Piping Class</b> code — from a <b>PMS</b> file that maps Class → Material/Corrosion Allowance/Joint Type.</p>
@@ -439,6 +436,16 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
       <div class="card-body">
         <div id="batch-summary" style="margin-bottom:12px;"></div>
         <div style="overflow-x:auto;"><table class="sch" id="batch-results-table"></table></div>
+      </div>
+    </section>
+
+    <!-- MATERIAL DATABASE ACCESS (section moved to end of form; content lives in modal below) -->
+    <section class="card">
+      <div class="card-h"><h3><span class="idx">C.</span>Material Database</h3>
+        <button class="small-btn" onclick="openDbModal()">⚙ Open Material Database</button>
+      </div>
+      <div class="card-body">
+        <p class="hint" style="margin:0;">Review, edit, or add the allowable stress (S) data, per-material temperature range, and source reference used by Sections A/B above for both Single Line and Batch modes. Changes here apply immediately.</p>
       </div>
     </section>
 

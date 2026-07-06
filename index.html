@@ -56,12 +56,12 @@ button,input,select{font-family:inherit;transition:border-color .15s ease, backg
 /* ---- main ---- */
 main{padding:34px 42px 90px;max-width:1440px;}
 
-/* ---- workspace: inputs (main) + persistent results (sticky side) ---- */
-.workspace{display:grid;grid-template-columns:1fr 400px;gap:24px;align-items:start;}
+/* ---- workspace: inputs (main) + persistent results (side) — equal width, natural height ---- */
+.workspace{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}
 .workspace.mode-batch{grid-template-columns:1fr;}
 .workspace.mode-batch .workspace-side{display:none;}
 .workspace-side{position:sticky;top:20px;}
-.results-placeholder{display:flex;flex-direction:column;align-items:center;text-align:center;gap:10px;padding:40px 24px;border:1.5px dashed var(--line-strong);border-radius:var(--radius);color:#8A97A0;font-size:12.5px;line-height:1.6;background:var(--panel-alt);}
+.results-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:40px 24px;border:1.5px dashed var(--line-strong);border-radius:var(--radius);color:#8A97A0;font-size:12.5px;line-height:1.6;background:var(--panel-alt);min-height:220px;}
 .results-placeholder .rp-icon{font-size:26px;opacity:.6;}
 .titleblock{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--steel);border-bottom:none;margin-bottom:0;border-radius:2px 2px 0 0;box-shadow:var(--shadow-card);}
 .tb-head{display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid var(--line);}
@@ -272,7 +272,6 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
             <label>Nominal Pipe Size (NPS) <span class="req">*</span> <button type="button" class="info-ic" onclick="toggleNote('nps-od',event)">ⓘ</button></label>
             <select id="in-nps" onchange="onNpsChange()"></select>
             <div class="unit-row" style="margin-top:8px;"><input id="in-od" type="number" placeholder="OD, e.g. 168.3"><select id="in-od-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
-            <div class="sub" id="od-note"></div>
           </div>
           <div class="field">
             <label>Corrosion / Erosion Allowance, c <span class="req">*</span> <button type="button" class="info-ic" onclick="toggleNote('corrosion',event)">ⓘ</button></label>
@@ -512,7 +511,7 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
         <div>⚠</div>
         <div><b>Data integrity notice.</b> Allowable stress (S) values were transcribed from the ASME B31.3-2024 pages you supplied — spot-check before relying on this for a real deliverable. Joint factor (E), weld strength factor (W), Y-coefficient, and standard pipe Schedule dimensions are pre-filled reference values — verify against Tables A-1B / 302.3.5 / 304.1.1 and ASME B36.10M/B36.19M in your copy. Open <b>Material Database</b> above to review sources or add data.</div>
       </div>
-      <b>Scope &amp; limitations:</b> This module implements the thin-wall straight-pipe formula of ASME B31.3 §304.1.2(a), Eq. 3a (t = PD / 2(SEW+PY)). It does not implement the thick-wall equation §304.1.2(b) — the tool will flag and stop if your inputs fall into that regime. It does not cover bends, miters, branch reinforcement, or external pressure (collapse). The Schedule-matching table covers NPS 1/2"–8" only; larger sizes show OD for reference but require manual schedule selection against ASME B36.10M/19M. This is a personal calculation aid; it is not a substitute for review and sign-off by a qualified engineer against the current, licensed edition of ASME B31.3, and applicable project specifications.
+      <b>Scope &amp; limitations:</b> This module implements the thin-wall straight-pipe formula of ASME B31.3 §304.1.2(a), Eq. 3a (t = PD / 2(SEW+PY)). It does not implement the thick-wall equation §304.1.2(b) — the tool will flag and stop if your inputs fall into that regime. It does not cover bends, miters, branch reinforcement, or external pressure (collapse). The Schedule-matching table covers NPS 1/2"–24" per ASME B36.10M; larger or non-standard sizes show OD for reference but require manual schedule selection. This is a personal calculation aid; it is not a substitute for review and sign-off by a qualified engineer against the current, licensed edition of ASME B31.3, and applicable project specifications.
     </footer>
   </main>
 </div>
@@ -731,12 +730,15 @@ function openCalcModal(){ document.getElementById('calc-modal').classList.add('o
 function closeCalcModal(){ document.getElementById('calc-modal').classList.remove('open'); }
 document.getElementById('calc-modal').addEventListener('click', function(e){ if(e.target===this) closeCalcModal(); });
 
-/* ---------------- Standard pipe schedule data (ASME B36.10M / B36.19M) ----------------
+/* ---------------- Standard pipe schedule data (ASME B36.10M) ----------------
    Public dimensional standard data (OD/WT by NPS & Schedule) — not proprietary allowable-
-   stress content, but still verify against your copy of B36.10M/B36.19M before formal use.
-   Coverage intentionally limited to NPS 1/2"-8", where Schedule 40=STD and 80=XS coincide
-   exactly and these figures are unambiguous. Larger sizes are offered for OD only (schedule
-   numbers diverge from STD/XS above NPS 8" and are not asserted here without a source page). */
+   stress content, but still verify against your copy of B36.10M before formal use.
+   Covers NPS 1/2"-24". For NPS 1/2"-8", Schedule 40=STD and 80=XS coincide exactly, so they
+   are shown merged ("40 / STD"). From NPS 10" up, STD becomes a fixed 9.53mm (NPS12+) and XS a
+   fixed 12.70mm (NPS10+), independent of the Sch 40 / Sch 80 values, so they are listed as
+   separate rows from NPS 10" onward (at exactly NPS 10" STD still equals Sch 40, hence merged
+   there too, but XS already differs from Sch 80). Sizes beyond NPS 24" are not included —
+   OD-only entries would need to be added, with schedule selected manually against B36.10M. */
 const PIPE_SCHEDULES = [
  {nps:'1/2', od:21.3,  wt:{'5':1.65,'10':2.11,'40 / STD':2.77,'80 / XS':3.73,'160':4.78,'XXS':7.47}},
  {nps:'3/4', od:26.7,  wt:{'5':1.65,'10':2.11,'40 / STD':2.87,'80 / XS':3.91,'160':5.56,'XXS':7.82}},
@@ -749,13 +751,16 @@ const PIPE_SCHEDULES = [
  {nps:'4',   od:114.3, wt:{'5':2.11,'10':3.05,'40 / STD':6.02,'80 / XS':8.56,'120':11.13,'160':13.49,'XXS':17.12}},
  {nps:'6',   od:168.3, wt:{'5':2.11,'10':3.40,'40 / STD':7.11,'80 / XS':10.97,'120':14.27,'160':18.26,'XXS':21.95}},
  {nps:'8',   od:219.1, wt:{'5':2.11,'10':3.76,'20':6.35,'30':7.04,'40 / STD':8.18,'60':10.31,'80 / XS':12.70,'100':15.09,'120':18.26,'140':20.62,'160':23.01}},
- {nps:'10 (OD only)', od:273.0, wt:{}},
- {nps:'12 (OD only)', od:323.8, wt:{}},
- {nps:'14 (OD only)', od:355.6, wt:{}},
- {nps:'16 (OD only)', od:406.4, wt:{}},
- {nps:'18 (OD only)', od:457.2, wt:{}},
- {nps:'20 (OD only)', od:508.0, wt:{}},
- {nps:'24 (OD only)', od:609.6, wt:{}},
+ // NPS 10"-24": STD and 40, and XS and 80, begin to diverge in this range (STD/XS become size-independent
+ // per §for large bore, while 40/80 keep scaling with size) — kept as separate schedule entries below.
+ // Values per ASME B36.10M (verify against your licensed copy before use in any formal deliverable).
+ {nps:'10',  od:273.1, wt:{'5':3.40,'10':4.19,'20':6.35,'30':7.80,'40 / STD':9.27,'60':12.70,'80':15.09,'XS':12.70,'100':18.26,'120':21.44,'140':25.40,'160':28.58,'XXS':25.40}},
+ {nps:'12',  od:323.9, wt:{'5':3.96,'10':4.57,'20':6.35,'30':8.38,'40':10.31,'STD':9.53,'60':14.27,'80':17.48,'XS':12.70,'100':21.44,'120':25.40,'140':28.58,'160':33.32,'XXS':25.40}},
+ {nps:'14',  od:355.6, wt:{'5':3.96,'10':6.35,'20':7.92,'30':9.53,'40':11.13,'STD':9.53,'60':15.09,'80':19.05,'XS':12.70,'100':23.83,'120':27.79,'140':31.75,'160':35.71}},
+ {nps:'16',  od:406.4, wt:{'5':4.19,'10':6.35,'20':7.92,'30':9.53,'40':12.70,'STD':9.53,'60':16.66,'80':21.44,'XS':12.70,'100':26.19,'120':30.96,'140':36.53,'160':40.49}},
+ {nps:'18',  od:457.2, wt:{'5':4.19,'10':6.35,'20':7.92,'30':11.13,'40':14.27,'STD':9.53,'60':19.05,'80':23.83,'XS':12.70,'100':29.36,'120':34.93,'140':39.67,'160':45.24}},
+ {nps:'20',  od:508.0, wt:{'10':6.35,'20':9.53,'30':12.70,'40':15.09,'STD':9.53,'60':20.62,'80':26.19,'XS':12.70,'100':32.54,'120':38.10,'140':44.45,'160':50.01}},
+ {nps:'24',  od:609.6, wt:{'10':6.35,'20':9.53,'30':14.27,'40':17.48,'STD':9.53,'60':24.61,'80':30.96,'XS':12.70,'100':38.89,'120':46.02,'140':52.37,'160':59.54}},
 ];
 
 function renderNpsSelect(){
@@ -767,11 +772,9 @@ function onNpsChange(){
   const i = document.getElementById('in-nps').value;
   const odInput = document.getElementById('in-od');
   const odUnit = document.getElementById('in-od-unit');
-  const note = document.getElementById('od-note');
   if(i===''){
     odInput.readOnly = false;
     odUnit.disabled = false;
-    if(note) note.textContent = 'Custom / non-standard size — enter OD manually (e.g. for a HOLD size).';
     return;
   }
   const p = PIPE_SCHEDULES[i];
@@ -779,7 +782,6 @@ function onNpsChange(){
   odUnit.value = 'mm';
   odInput.readOnly = true;
   odUnit.disabled = true;
-  if(note) note.textContent = `OD auto-filled from NPS ${p.nps} per ASME B36.10M/19M — switch to "Custom OD" above to override.`;
 }
 
 // Given a required t_min and the OD actually entered, find the matching NPS row (if any) and
@@ -793,7 +795,7 @@ function renderSchedulePanel(OD, tmin){
   const rowMatch = PIPE_SCHEDULES.find(p=>Math.abs(p.od-OD)<0.5);
   if(!rowMatch || Object.keys(rowMatch.wt).length===0){
     panel.style.display='block';
-    document.getElementById('sch-table').innerHTML = `<tr><td style="padding:8px;color:#8A97A0;">No schedule chart loaded for this OD (${fmt(OD)} mm). Covers NPS 1/2"–8" only — for larger sizes, select the schedule manually against ASME B36.10M/19M using t_min above.</td></tr>`;
+    document.getElementById('sch-table').innerHTML = `<tr><td style="padding:8px;color:#8A97A0;">No schedule chart loaded for this OD (${fmt(OD)} mm). Covers NPS 1/2"–24" only — for larger or non-standard sizes, select the schedule manually against ASME B36.10M using t_min above.</td></tr>`;
     return;
   }
   panel.style.display='block';
@@ -1069,7 +1071,7 @@ function downloadLineListTemplate(){
     ["Do not rename, reorder, or delete the header row (row 1) of the 'Line List' sheet — the parser reads columns by header text."],
     [""],
     ["Line No / Tag — your line number / tag, for traceability in the output register only."],
-    ["NPS — nominal pipe size as text, matching this tool's schedule chart, e.g. 1/2, 3/4, 1, 1 1/4, 1 1/2, 2, 2 1/2, 3, 4, 6, 8, or 10/12/14/16/18/20/24 (OD reference only, no schedule match above NPS 8)."],
+    ["NPS — nominal pipe size as text, matching this tool's schedule chart, e.g. 1/2, 3/4, 1, 1 1/4, 1 1/2, 2, 2 1/2, 3, 4, 6, 8, 10, 12, 14, 16, 18, 20, or 24 (full Schedule chart per ASME B36.10M). Larger or non-standard sizes: use Custom OD (mm) and select schedule manually."],
     ["Custom OD (mm) — leave blank to use NPS lookup. Fill in to override with a non-standard OD (e.g. for a size marked HOLD in your Line List)."],
     ["Piping Class — the project piping class code (e.g. A1A1). Only used if 'Material Spec/Grade' is left blank and a PMS file is uploaded — this line's NPS is matched against the PMS's per-class size ranges to pick the right row."],
     ["Material Spec/Grade — fill this directly to skip the PMS lookup entirely. Text must exactly match a 'Spec / Grade' entry in this tool's Material Database (Material Database button, top of page)."],

@@ -54,15 +54,13 @@ button,input,select{font-family:inherit;transition:border-color .15s ease, backg
 .topbrand-credit{font-size:10.5px;color:#7C8A93;font-family:var(--mono);white-space:nowrap;}
 
 /* ---- main ---- */
-main{padding:34px 42px 90px;max-width:1440px;}
+main{padding:34px 42px 90px;max-width:1440px;margin:0 auto;}
 
 /* ---- workspace: inputs (main) + persistent results (side) — equal width, natural height ---- */
 .workspace{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}
 .workspace.mode-batch{grid-template-columns:1fr;}
 .workspace.mode-batch .workspace-side{display:none;}
 .workspace-side{position:sticky;top:20px;}
-.results-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;gap:10px;padding:40px 24px;border:1.5px dashed var(--line-strong);border-radius:var(--radius);color:#8A97A0;font-size:12.5px;line-height:1.6;background:var(--panel-alt);min-height:220px;}
-.results-placeholder .rp-icon{font-size:26px;opacity:.6;}
 .titleblock{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--steel);border-bottom:none;margin-bottom:0;border-radius:2px 2px 0 0;box-shadow:var(--shadow-card);}
 .tb-head{display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid var(--line);}
 .tb-head h2{font-family:var(--cond);font-size:20px;margin:0;font-weight:700;}
@@ -262,7 +260,7 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
           </div>
           <div class="field">
             <label>Design Temperature <span class="req">*</span></label>
-            <div class="unit-row"><input id="in-temp" type="number" placeholder="e.g. 350" oninput="onMaterialChange()"><select id="in-temp-unit" onchange="onMaterialChange()"><option value="C">°C</option><option value="F">°F</option></select></div>
+            <div class="unit-row"><input id="in-temp" type="number" placeholder="e.g. 350" oninput="onMaterialChange();onWGroupChange();"><select id="in-temp-unit" onchange="onMaterialChange();onWGroupChange();"><option value="C">°C</option><option value="F">°F</option></select></div>
           </div>
           <div class="field">
             <label>Design Pressure (internal) <span class="req">*</span></label>
@@ -271,7 +269,7 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
           <div class="field">
             <label>Nominal Pipe Size (NPS) <span class="req">*</span> <button type="button" class="info-ic" onclick="toggleNote('nps-od',event)">ⓘ</button></label>
             <select id="in-nps" onchange="onNpsChange()"></select>
-            <div class="unit-row" style="margin-top:8px;"><input id="in-od" type="number" placeholder="OD, e.g. 168.3"><select id="in-od-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
+            <div class="unit-row" id="od-custom-row" style="margin-top:8px;display:none;"><input id="in-od" type="number" placeholder="OD, e.g. 168.3"><select id="in-od-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
           </div>
           <div class="field">
             <label>Corrosion / Erosion Allowance, c <span class="req">*</span> <button type="button" class="info-ic" onclick="toggleNote('corrosion',event)">ⓘ</button></label>
@@ -280,23 +278,38 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
 
           <div class="group-label">Joint &amp; tolerance (defaults — adjust if needed)</div>
           <div class="field">
-            <label>Joint Type → Quality Factor E <button type="button" class="info-ic" onclick="toggleNote('joint-e',event)">ⓘ</button></label>
+            <label>Joint Type → Quality Factor Ej <button type="button" class="info-ic" onclick="toggleNote('joint-e',event)">ⓘ</button></label>
             <select id="in-joint" onchange="onJointChange()">
-              <option value="1.00">Seamless — E = 1.00</option>
-              <option value="1.00-efw">EFW, double-welded, 100% RT — E = 1.00</option>
-              <option value="0.90">EFW, double-welded, spot RT — E = 0.90</option>
-              <option value="0.80">EFW, double-welded, no RT — E = 0.80</option>
-              <option value="0.90-s">EFW, single-welded, 100% RT — E = 0.90</option>
-              <option value="0.85-s">EFW, single-welded, spot RT — E = 0.85</option>
-              <option value="0.85">ERW (fixed — not increased by extra NDE) — E = 0.85</option>
-              <option value="0.60">Furnace butt-welded — E = 0.60</option>
-              <option value="custom">Custom / from Table A-1B…</option>
+              <option value="1.00">Seamless — Ej = 1.00</option>
+              <option value="0.80">EFW, single butt weld, as required — Ej = 0.80</option>
+              <option value="0.90-single-spot">EFW, single butt weld, + spot RT — Ej = 0.90</option>
+              <option value="1.00-single-full">EFW, single butt weld, + 100% RT — Ej = 1.00</option>
+              <option value="0.85">EFW, double butt weld, as required — Ej = 0.85</option>
+              <option value="0.90-double-spot">EFW, double butt weld, + spot RT — Ej = 0.90</option>
+              <option value="1.00-double-full">EFW, double butt weld, + 100% RT — Ej = 1.00</option>
+              <option value="0.95">API 5L, EFW double butt seam, as required — Ej = 0.95</option>
+              <option value="1.00-api5l">API 5L, EFW double butt seam, + 100% RT — Ej = 1.00</option>
+              <option value="0.85-erw">ERW (fixed — not increased by exam) — Ej = 0.85</option>
+              <option value="0.60">Furnace butt weld, continuous (fixed) — Ej = 0.60</option>
+              <option value="custom">Custom / from Table 302.3.4-1…</option>
             </select>
-            <input id="in-joint-custom" type="number" step="0.01" placeholder="E value" style="margin-top:6px;display:none;">
+            <input id="in-joint-custom" type="number" step="0.01" placeholder="Ej value" style="margin-top:6px;display:none;">
           </div>
           <div class="field">
-            <label>Weld Strength Reduction Factor W <button type="button" class="info-ic" onclick="toggleNote('weld-w',event)">ⓘ</button></label>
-            <input id="in-w" type="number" step="0.01" value="1.00">
+            <label>Weld Joint Strength Reduction Factor W <button type="button" class="info-ic" onclick="toggleNote('weld-w',event)">ⓘ</button></label>
+            <select id="in-w-group" onchange="onWGroupChange()">
+              <option value="na">Not applicable / T ≤ 427°C — W = 1.00</option>
+              <option value="carbonSteel">Carbon Steel</option>
+              <option value="crMo">Cr–Mo steel (½Cr–½Mo … 9Cr–1Mo, non-CSEF)</option>
+              <option value="csefNT">CSEF, normalized + tempered</option>
+              <option value="csef">CSEF, other PWHT</option>
+              <option value="austeniticAutogenous">Austenitic/Ni alloy — autogenous weld, subcritical PWHT</option>
+              <option value="austeniticOther">Austenitic/Ni alloy — other</option>
+              <option value="otherFormula">Other materials (formula, Note 9 — needs T꜀ᵣ, set manually)</option>
+              <option value="custom">Custom / manual entry…</option>
+            </select>
+            <input id="in-w" type="number" step="0.01" value="1.00" style="margin-top:6px;">
+            <div class="sub" id="w-group-warning"></div>
           </div>
           <div class="field">
             <label>Mechanical / Thread / Groove Allowance <button type="button" class="info-ic" onclick="toggleNote('mech-allow',event)">ⓘ</button></label>
@@ -358,14 +371,19 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
               <div class="step-desc">Used only when a line/class doesn't specify its own value — per-line values in the Line List (or PMS) always take priority.</div>
               <div class="grid2">
                 <div class="field">
-                  <label>Default Joint Type / E</label>
+                  <label>Default Joint Type / Ej</label>
                   <select id="batch-default-joint">
-                    <option value="1.00">Seamless — E = 1.00</option>
-                    <option value="1.00-efw">EFW, double-welded, 100% RT — E = 1.00</option>
-                    <option value="0.90">EFW, double-welded, spot RT — E = 0.90</option>
-                    <option value="0.80">EFW, double-welded, no RT — E = 0.80</option>
-                    <option value="0.85">ERW (fixed) — E = 0.85</option>
-                    <option value="0.60">Furnace butt-welded — E = 0.60</option>
+                    <option value="1.00">Seamless — Ej = 1.00</option>
+                    <option value="0.80">EFW, single butt weld, as required — Ej = 0.80</option>
+                    <option value="0.90-single-spot">EFW, single butt weld, + spot RT — Ej = 0.90</option>
+                    <option value="1.00-single-full">EFW, single butt weld, + 100% RT — Ej = 1.00</option>
+                    <option value="0.85">EFW, double butt weld, as required — Ej = 0.85</option>
+                    <option value="0.90-double-spot">EFW, double butt weld, + spot RT — Ej = 0.90</option>
+                    <option value="1.00-double-full">EFW, double butt weld, + 100% RT — Ej = 1.00</option>
+                    <option value="0.95">API 5L, EFW double butt seam, as required — Ej = 0.95</option>
+                    <option value="1.00-api5l">API 5L, EFW double butt seam, + 100% RT — Ej = 1.00</option>
+                    <option value="0.85-erw">ERW (fixed) — Ej = 0.85</option>
+                    <option value="0.60">Furnace butt weld, continuous (fixed) — Ej = 0.60</option>
                   </select>
                 </div>
                 <div class="field">
@@ -433,10 +451,14 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
         <button class="small-btn" onclick="openCalcModal()">🔍 View calculation breakdown</button>
       </div>
     </section>
-    <div class="results-placeholder" id="results-placeholder">
-      <div class="rp-icon">📐</div>
-      <div>Results will appear here as soon as you calculate — no need to scroll.</div>
-    </div>
+    <section class="card" id="results-placeholder">
+      <div class="card-h"><h3><span class="idx">B.</span>Results</h3></div>
+      <div class="card-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:60px 24px;text-align:center;">
+        <div style="font-size:26px;opacity:.35;">📐</div>
+        <div style="font-family:var(--cond);font-weight:700;font-size:15px;color:#5C6B74;">Awaiting calculation</div>
+        <div class="hint" style="max-width:280px;margin:0;">Fill in the required inputs and press Calculate — results will appear right here, beside the form.</div>
+      </div>
+    </section>
     </div>
     </div>
 
@@ -529,8 +551,8 @@ const fmt = n => (Math.round(n*1000)/1000).toString();
 const NOTES = {
   'nps-od': 'Selecting an NPS fills the OD from ASME B36.10M/19M automatically. Choose the blank / Custom OD option at the top of the list for non-standard or HOLD sizes, then enter OD manually.',
   'corrosion': 'Engineering judgment input — corrosivity of service, expected life. Not from a standard table.',
-  'joint-e': 'Values per Table A-1B / §302.3.4 as commonly published — ERW is a fixed factor and cannot be increased by additional examination. Cross-check exact line/page against your licensed copy.',
-  'weld-w': 'Default 1.00. Reduce per Table 302.3.5 only for longitudinal/spiral welds in the creep range (typically > 425°C / 800°F depending on material). Verify applicability.',
+  'joint-e': 'Values transcribed directly from ASME B31.3-2024 Table 302.3.4-1 (Longitudinal Weld Joint Quality Factor, Ej). ERW and furnace butt weld are fixed factors and cannot be increased by additional examination (Note 1). Single vs. double butt weld and the level of radiography (none / spot / 100%) determine the value for electric fusion welds.',
+  'weld-w': 'Values transcribed directly from ASME B31.3-2024 Table 302.3.5-1 (Weld Joint Strength Reduction Factor, W). Select the steel group matching your material — below the group\'s first tabulated temperature W=1.0 (General Note a); above its last tabulated temperature, W is the designer\'s responsibility and must be entered manually. Linear interpolation is used between tabulated points (also per the table\'s notes).',
   'mech-allow': 'Only applies to threaded, grooved, or bored components (§304.1.2(a)(3)).',
   'mill-undertol': '12.5% is the common ASTM seamless-pipe default (e.g. A106/A335). Verify against the applicable ASTM spec for your selected material — plate/welded pipe tolerances differ.',
   'warn-margin': 'Margin = (contractor WT − calculated t_min) / t_min. Below 0% is always FAIL (nonconforming per ASME B31.3 — t must be ≥ t_min). A small positive margin is still compliant but tight; this threshold flags it for a closer look.',
@@ -772,16 +794,18 @@ function onNpsChange(){
   const i = document.getElementById('in-nps').value;
   const odInput = document.getElementById('in-od');
   const odUnit = document.getElementById('in-od-unit');
+  const odRow = document.getElementById('od-custom-row');
   if(i===''){
+    odRow.style.display = 'flex';
     odInput.readOnly = false;
     odUnit.disabled = false;
+    odInput.value = '';
     return;
   }
   const p = PIPE_SCHEDULES[i];
   odInput.value = p.od;
   odUnit.value = 'mm';
-  odInput.readOnly = true;
-  odUnit.disabled = true;
+  odRow.style.display = 'none';
 }
 
 // Given a required t_min and the OD actually entered, find the matching NPS row (if any) and
@@ -847,28 +871,85 @@ function onJointChange(){
   custom.style.display = v==='custom' ? 'block' : 'none';
 }
 
-/* ---------------- Y-coefficient lookup (editable reference set) ---------------- */
-// Commonly published values per ASME B31.3 Table 304.1.1, valid only for t < D/6.
-// Four material groups x 6 temperature breakpoints (482/510/538/566/593/621 degC).
-// MUST be verified line-by-line against the user's licensed 2024 edition — see global warning banner.
+/* ---------------- Weld Joint Strength Reduction Factor W — ASME B31.3-2024 Table 302.3.5-1 (exact, user-supplied source) ---------------- */
+// Transcribed directly from Table 302.3.5-1 (source file provided by user). Breakpoints in degC:
+// 427,454,482,510,538,566,593,621,649,677,704,732,760,788,816. Blank cells in the source mean "not
+// tabulated" — per General Note (a), below a group's first tabulated point W=1.0; above its last
+// tabulated point the value is explicitly "the responsibility of the designer" (not extrapolated here).
+const W_TABLE = {
+  carbonSteel:            [[427,1],[454,1],[482,1],[510,1],[538,1],[566,1],[593,1]],
+  crMo:                   [[427,1],[454,0.95],[482,0.91],[510,0.86],[538,0.82],[566,0.77],[593,0.73],[621,0.68],[649,0.64]],
+  csefNT:                 [[510,1],[538,0.95],[566,0.91],[593,0.86],[621,0.82],[649,0.77]],
+  csef:                   [[482,1],[510,0.5],[538,0.5],[566,0.5],[593,0.5],[621,0.5],[649,0.5]],
+  austeniticAutogenous:   [[510,1],[538,1],[566,1],[593,1],[621,1],[649,1],[677,1],[704,1],[732,1],[760,1],[788,1],[816,1]],
+  austeniticOther:        [[510,1],[538,0.95],[566,0.91],[593,0.86],[621,0.82],[649,0.77],[677,0.73],[704,0.68],[732,0.64],[760,0.59],[788,0.55],[816,0.5]]
+};
+function interpolateWGroup(group, tempC){
+  const pts = W_TABLE[group];
+  if(!pts) return {error:'no-data'};
+  if(tempC <= pts[0][0]) return {value:1.0}; // General Note (a): below tabulated range, W=1.0
+  if(tempC > pts[pts.length-1][0]) return {error:'above-max', bound:pts[pts.length-1][0]};
+  return {value:interpolatePoints(pts, tempC)};
+}
+function onWGroupChange(){
+  const group = document.getElementById('in-w-group').value;
+  const wInput = document.getElementById('in-w');
+  const warnEl = document.getElementById('w-group-warning');
+  if(warnEl) warnEl.textContent = '';
+  if(group==='na'){ wInput.value = '1.00'; return; }
+  if(group==='custom'){ return; } // leave whatever the user has typed
+  if(group==='otherFormula'){
+    if(warnEl) warnEl.textContent = 'Per Note (9): W = 1.0 for Ti ≤ Tcr; above Tcr, W = 1 − 0.00164×(Ti − Tcr) up to 816°C. Tcr comes from ASME BPVC Section II Part D (Tables 1A/1B) for the base metal — determine it and compute/enter W manually.';
+    return;
+  }
+  const tempC = toC(parseFloat(document.getElementById('in-temp').value), document.getElementById('in-temp-unit').value);
+  if(isNaN(tempC)){ if(warnEl) warnEl.textContent = 'Enter a design temperature above to auto-suggest W.'; return; }
+  const r = interpolateWGroup(group, tempC);
+  if(r.error==='above-max'){
+    if(warnEl) warnEl.textContent = `Ti (${fmt(tempC)}°C) exceeds the tabulated range for this steel group (max ${r.bound}°C) — per General Note (a), W above this is the designer's responsibility. Enter manually.`;
+    return;
+  }
+  wInput.value = fmt(r.value);
+}
+
+/* ---------------- Y-coefficient lookup — ASME B31.3-2024 Table 304.1.1-1 (exact, user-supplied source) ---------------- */
+// Transcribed directly from Table 304.1.1-1, "Values of Coefficient Y for t < D/6" (source file provided by user).
+// Breakpoints in degC: 482("482 and below"),510,538,566,593,621,649,677("677 and above").
+// Per the table's own note, Y may be interpolated for intermediate temperatures — implemented below.
+// For t >= D/6, Y = (d + 2c) / (D + d + 2c) instead (d = inside diameter) — NOT handled by this lookup.
 const Y_TABLE = {
-  ferritic:  [[482,0.4],[510,0.5],[538,0.7],[566,0.7],[593,0.7],[621,0.7]],
-  austenitic:[[482,0.4],[510,0.4],[538,0.4],[566,0.4],[593,0.5],[621,0.7]],
-  otherDuctile:[[482,0.4],[510,0.4],[538,0.4],[566,0.4],[593,0.4],[621,0.4]],
-  castIron:  [[482,0.0]]
+  ferritic:   [[482,0.4],[510,0.5],[538,0.7],[566,0.7],[593,0.7],[621,0.7],[649,0.7],[677,0.7]],
+  austenitic: [[482,0.4],[510,0.4],[538,0.4],[566,0.4],[593,0.5],[621,0.7],[649,0.7],[677,0.7]],
+  nickelAlloy:[[482,0.4],[510,0.4],[538,0.4],[566,0.4],[593,0.4],[621,0.4],[649,0.5],[677,0.7]], // UNS N06617, N08800, N08810, N08825 only
+  otherDuctile:[[482,0.4],[510,0.4],[538,0.4],[566,0.4],[593,0.4],[621,0.4],[649,0.4],[677,0.4]],
+  grayIron:   [[482,0.0],[677,0.0]]
 };
 function guessMaterialGroup(materialDesc){
   const d = (materialDesc||'').toLowerCase();
-  if(/cast iron|gray iron|malleable|ductile iron/.test(d)) return 'castIron';
+  if(/gray iron|grey iron|cast iron|malleable|ductile iron/.test(d)) return 'grayIron';
+  if(/n0?6617|n0?8800|n0?8810|n0?8825|incoloy ?8(00|25)|inconel ?617/.test(d)) return 'nickelAlloy';
   if(/austenitic|stainless|tp3|tp1|duplex|s3\d{4}/.test(d)) return 'austenitic';
   if(/aluminum|copper|nickel alloy|titanium|zirconium|brass|bronze/.test(d)) return 'otherDuctile';
   return 'ferritic';
 }
+// Linear interpolation between tabulated (T,Y) points, flat below the first point and above the last
+// (the table's own end labels — "482 and below" / "677 and above" — are already flat by definition).
+function interpolatePoints(points, tempC){
+  if(tempC <= points[0][0]) return points[0][1];
+  if(tempC >= points[points.length-1][0]) return points[points.length-1][1];
+  for(let k=1;k<points.length;k++){
+    if(points[k][0]>=tempC){
+      const [t0,y0]=points[k-1], [t1,y1]=points[k];
+      if(t1===t0) return y1;
+      return y0 + (y1-y0)*(tempC-t0)/(t1-t0);
+    }
+  }
+  return points[points.length-1][1];
+}
 function suggestY(tempC, materialDesc){
   const group = guessMaterialGroup(materialDesc);
-  const brackets = Y_TABLE[group];
-  for(const [t,y] of brackets){ if(tempC<=t) return {value:y, group}; }
-  return {value:brackets[brackets.length-1][1], group};
+  const value = interpolatePoints(Y_TABLE[group], tempC);
+  return {value, group};
 }
 
 /* ---------------- Reusable schedule matching (used by single-line + batch) ---------------- */
@@ -939,7 +1020,7 @@ function runCalc(){
     const label = r.error==='no-material' ? 'Cannot calculate.' : r.error==='thick-wall' ? 'Thick-wall regime detected.' : 'Cannot calculate.';
     warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>${label}</b> ${r.message}</div></div>`;
     document.getElementById('results-card').style.display='none';
-    document.getElementById('results-placeholder').style.display='flex';
+    document.getElementById('results-placeholder').style.display='block';
     return;
   }
 
@@ -1052,7 +1133,7 @@ function switchMode(mode){
   document.getElementById('workspace').classList.toggle('mode-batch', mode==='batch');
   document.getElementById('results-card').style.display='none';
   document.getElementById('batch-results-card').style.display='none';
-  document.getElementById('results-placeholder').style.display = mode==='single' ? 'flex' : 'none';
+  document.getElementById('results-placeholder').style.display = mode==='single' ? 'block' : 'none';
 }
 
 const LINE_LIST_HEADERS = ["Line No / Tag","NPS","Custom OD (mm)","Piping Class","Material Spec/Grade",

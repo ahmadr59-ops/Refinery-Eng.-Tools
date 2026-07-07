@@ -260,7 +260,7 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
           </div>
           <div class="field">
             <label>Design Temperature <span class="req">*</span></label>
-            <div class="unit-row"><input id="in-temp" type="number" placeholder="e.g. 350" oninput="onMaterialChange();onWGroupChange();"><select id="in-temp-unit" onchange="onMaterialChange();onWGroupChange();"><option value="C">°C</option><option value="F">°F</option></select></div>
+            <div class="unit-row"><input id="in-temp" type="number" placeholder="e.g. 350" oninput="onMaterialChange();onWGroupChange();onYGroupChange();"><select id="in-temp-unit" onchange="onMaterialChange();onWGroupChange();onYGroupChange();"><option value="C">°C</option><option value="F">°F</option></select></div>
           </div>
           <div class="field">
             <label>Design Pressure (internal) <span class="req">*</span></label>
@@ -310,6 +310,20 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
             </select>
             <input id="in-w" type="number" step="0.01" value="1.00" style="margin-top:6px;">
             <div id="w-group-warning" style="font-size:11.5px;color:var(--amber-dk);margin-top:6px;line-height:1.5;font-weight:600;"></div>
+          </div>
+          <div class="field">
+            <label>Y Coefficient — Material Group (Table 304.1.1-1) <span class="req">*</span> <button type="button" class="info-ic" onclick="toggleNote('y-coeff',event)">ⓘ</button></label>
+            <select id="in-y-group" onchange="onYGroupChange()">
+              <option value="ferritic">Ferritic steels</option>
+              <option value="austenitic">Austenitic steels</option>
+              <option value="nickelAlloy">Ni-Cr-Fe (UNS N06617/N08800/N08810/N08825 ONLY)</option>
+              <option value="otherDuctile">Other ductile metals</option>
+              <option value="grayIron">Cast iron</option>
+              <option value="custom">Custom / manual entry…</option>
+            </select>
+            <input id="in-y" type="number" step="0.01" value="0.4" style="margin-top:6px;">
+            <div id="y-group-warning" style="font-size:11.5px;color:var(--amber-dk);margin-top:6px;line-height:1.5;font-weight:600;"></div>
+            <div style="font-size:11px;color:#8a8a8a;margin-top:4px;">Group is auto-suggested from the selected material's spec/description — <b>verify it matches the actual metallurgy before calculating</b> and correct it here if not.</div>
           </div>
           <div class="field">
             <label>Mechanical / Thread / Groove Allowance <button type="button" class="info-ic" onclick="toggleNote('mech-allow',event)">ⓘ</button></label>
@@ -389,6 +403,17 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
                 <div class="field">
                   <label>Default W (weld strength reduction)</label>
                   <input id="batch-default-w" type="number" step="0.01" value="1.00">
+                </div>
+                <div class="field">
+                  <label>Default Y Material Group (Table 304.1.1-1) <button type="button" class="info-ic" onclick="toggleNote('y-coeff',event)">ⓘ</button></label>
+                  <select id="batch-default-y-group">
+                    <option value="ferritic">Ferritic steels</option>
+                    <option value="austenitic">Austenitic steels</option>
+                    <option value="nickelAlloy">Ni-Cr-Fe (UNS N06617/N08800/N08810/N08825 ONLY)</option>
+                    <option value="otherDuctile">Other ductile metals</option>
+                    <option value="grayIron">Cast iron</option>
+                  </select>
+                  <div style="font-size:11px;color:#8a8a8a;margin-top:4px;">Applies only to lines that don't set "Y Group Override" in the Line List and aren't in the PMS — <b>check per-line metallurgy for mixed material lists</b> rather than relying on one project default.</div>
                 </div>
                 <div class="field">
                   <label>Default Corrosion Allowance, c (mm)</label>
@@ -553,6 +578,7 @@ const NOTES = {
   'corrosion': 'Engineering judgment input — corrosivity of service, expected life. Not from a standard table.',
   'joint-e': 'Values transcribed directly from ASME B31.3-2024 Table 302.3.4-1 (Longitudinal Weld Joint Quality Factor, Ej). ERW and furnace butt weld are fixed factors and cannot be increased by additional examination (Note 1). Single vs. double butt weld and the level of radiography (none / spot / 100%) determine the value for electric fusion welds.',
   'weld-w': 'Values transcribed directly from ASME B31.3-2024 Table 302.3.5-1 (Weld Joint Strength Reduction Factor, W). Select the steel group matching your material — below the group\'s first tabulated temperature W=1.0 (General Note a); above its last tabulated temperature, W is the designer\'s responsibility and must be entered manually. Linear interpolation is used between tabulated points (also per the table\'s notes).',
+  'y-coeff': 'Values transcribed directly from ASME B31.3-2024 Table 304.1.1-1 (Values of Coefficient Y for t &lt; D/6). The group is auto-suggested from the selected material\'s spec/description as a starting point ONLY — this is a text match, not a metallurgical determination, so <b>you must confirm the group is correct</b> (or pick the right one / enter a custom value) before relying on the result. The "Ni-Cr-Fe" row is restricted by the table itself to UNS N06617, N08800, N08810, N08825 — do not use it for other nickel alloys. If the calculated t comes out ≥ D/6, this tool automatically switches from the table value to the alternate formula Y = (d+2c)/(D+d+2c) per the table\'s own nomenclature note, and shows that in the calculation steps.',
   'mech-allow': 'Only applies to threaded, grooved, or bored components (§304.1.2(a)(3)).',
   'mill-undertol': '12.5% is the common ASTM seamless-pipe default (e.g. A106/A335). Verify against the applicable ASTM spec for your selected material — plate/welded pipe tolerances differ.',
   'warn-margin': 'Margin = (contractor WT − calculated t_min) / t_min. Below 0% is always FAIL (nonconforming per ASME B31.3 — t must be ≥ t_min). A small positive margin is still compliant but tight; this threshold flags it for a closer look.',
@@ -994,6 +1020,11 @@ function onMaterialChange(){
   const m = materials[i];
   const echo = document.getElementById('material-s-echo');
   if(!m){ echo.textContent=''; return; }
+  const yGroupSel = document.getElementById('in-y-group');
+  if(yGroupSel && yGroupSel.value!=='custom'){
+    yGroupSel.value = guessMaterialGroup((m.desc||'') + ' ' + (m.spec||''));
+    onYGroupChange();
+  }
   if(!m.s){
     echo.innerHTML = `<span style="color:#B5432E;">No S-table entered for this material — fill it in the Material Database above (row for ${m.spec}) before calculating.</span>`;
     return;
@@ -1179,6 +1210,21 @@ function onWGroupChange(){
   wInput.value = fmt(r.value);
 }
 
+function onYGroupChange(){
+  const group = document.getElementById('in-y-group').value;
+  const yInput = document.getElementById('in-y');
+  const warnEl = document.getElementById('y-group-warning');
+  if(warnEl) warnEl.textContent = '';
+  if(group==='custom'){ return; } // leave whatever the user has typed
+  if(group==='nickelAlloy' && warnEl){
+    warnEl.textContent = 'Restricted row — Table 304.1.1-1 limits this Y row to UNS N06617, N08800, N08810, N08825 ONLY. If the material is a different nickel alloy, use "Other ductile metals" instead.';
+  }
+  const tempC = toC(parseFloat(document.getElementById('in-temp').value), document.getElementById('in-temp-unit').value);
+  if(isNaN(tempC)){ if(warnEl) warnEl.textContent += (warnEl.textContent?' ':'') + 'Enter a design temperature above to auto-suggest Y.'; return; }
+  const v = yValueForGroup(group, tempC);
+  if(!isNaN(v)) yInput.value = fmt(v);
+}
+
 /* ---------------- Y-coefficient lookup — ASME B31.3-2024 Table 304.1.1-1 (exact, user-supplied source) ---------------- */
 // Transcribed directly from Table 304.1.1-1, "Values of Coefficient Y for t < D/6" (source file provided by user).
 // Breakpoints in degC: 482("482 and below"),510,538,566,593,621,649,677("677 and above").
@@ -1191,6 +1237,12 @@ const Y_TABLE = {
   otherDuctile:[[482,0.4],[510,0.4],[538,0.4],[566,0.4],[593,0.4],[621,0.4],[649,0.4],[677,0.4]],
   grayIron:   [[482,0.0],[677,0.0]]
 };
+// NOTE: this is a SUGGESTION only — text pattern-matching on a spec/description string cannot
+// reliably identify metallurgical group (e.g. it cannot distinguish a restricted-UNS nickel alloy
+// from a generic "other ductile" nickel alloy). It pre-fills the Y-group selector in the UI, but
+// the group actually used in the calculation is always the one visibly selected in that dropdown
+// (user-confirmed/overridable) — see onYGroupChange()/onMaterialChange(). There is no silent
+// fallback in the calculation path itself.
 function guessMaterialGroup(materialDesc){
   const d = (materialDesc||'').toLowerCase();
   if(/gray iron|grey iron|cast iron|malleable|ductile iron/.test(d)) return 'grayIron';
@@ -1213,10 +1265,31 @@ function interpolatePoints(points, tempC){
   }
   return points[points.length-1][1];
 }
+// Table-lookup Y for an EXPLICITLY given group (no guessing) — this is what the calculation core uses.
+function yValueForGroup(group, tempC){
+  if(!Y_TABLE[group]) return NaN;
+  return interpolatePoints(Y_TABLE[group], tempC);
+}
+// UI-only helper: pre-fills the Y-group dropdown with a suggested group + value for the user to
+// confirm/override. Not called from computeCore.
 function suggestY(tempC, materialDesc){
   const group = guessMaterialGroup(materialDesc);
   const value = interpolatePoints(Y_TABLE[group], tempC);
   return {value, group};
+}
+// Alternate Y for the t >= D/6 (thick-wall) regime — per the table's own nomenclature note:
+// Y = (d + 2c) / (D + d + 2c), d = inside diameter = D - 2t. Solved iteratively since d depends on t.
+function solveThickWallY(P, OD, S, E, W, c, t0, maxIter=25){
+  let t = t0;
+  for(let k=0;k<maxIter;k++){
+    const d = OD - 2*t;
+    if(d<=0) return {error:true};
+    const Yalt = (d + 2*c) / (OD + d + 2*c);
+    const tNext = (P*OD) / (2*(S*E*W + P*Yalt));
+    if(Math.abs(tNext-t) < 1e-6) return {t:tNext, Y:Yalt, iterations:k+1};
+    t = tNext;
+  }
+  return {t, Y:(OD-2*t+2*c)/(OD+(OD-2*t)+2*c), iterations:maxIter, notConverged:true};
 }
 
 /* ---------------- Reusable schedule matching (used by single-line + batch) ---------------- */
@@ -1232,9 +1305,9 @@ function chooseLightestSchedule(rowMatch, tmin){
 
 /* ---------------- Core thickness calculation (Eq. 3a) — shared by single-line + batch ---------------- */
 // Returns {error} on failure, or a full result object on success.
-function computeCore({m, P, OD, tempC, E, W, c, mech, millPct}){
+function computeCore({m, P, OD, tempC, E, W, c, mech, millPct, Y, YGroup}){
   if(!m || !m.s) return {error:'no-material', message:'Selected/matched material has no S-table entered in the Material Database.'};
-  if([P,OD,tempC,E,W,c,millPct].some(v=>isNaN(v)) || !OD || !P) return {error:'bad-input', message:'Missing or invalid input (pressure, OD, temperature, joint factor, mill tolerance).'};
+  if([P,OD,tempC,E,W,c,millPct,Y].some(v=>isNaN(v)) || !OD || !P) return {error:'bad-input', message:'Missing or invalid input (pressure, OD, temperature, joint factor, Y coefficient, or mill tolerance).'};
 
   const sLookup = interpolateS(m.s, tempC);
   if(sLookup.error){
@@ -1246,23 +1319,31 @@ function computeCore({m, P, OD, tempC, E, W, c, mech, millPct}){
     return {error:'s-lookup', message:msg};
   }
   const S = sLookup.value;
-  const Yr = suggestY(tempC, m.desc + ' ' + m.spec);
-  const Y = Yr.value;
 
   const ratioCheck = P / (S*E) > 0.385;
   if(ratioCheck){
     return {error:'thick-wall', message:`Thick-wall regime (P/SE = ${(P/(S*E)).toFixed(4)} > 0.385) — Eq. 3a not valid, §304.1.2(b) thick-wall equation required (not implemented).`};
   }
 
-  const t = (P*OD) / (2*(S*E*W + P*Y));
+  let t = (P*OD) / (2*(S*E*W + P*Y));
+  let Yused = Y, thickWallYSwitch = false, thickWallIterations = null;
+  // Per the table's own nomenclature note, the tabulated Y is only valid for t < D/6. At/above
+  // that limit, switch to Y = (d+2c)/(D+d+2c) and re-solve iteratively — not just a warning.
+  if(t >= OD/6){
+    const alt = solveThickWallY(P, OD, S, E, W, c, t);
+    if(alt.error){
+      return {error:'thick-wall-invalid', message:`Thick-wall (t ≥ D/6) alternate-Y solve did not converge to a physical result (computed inside diameter ≤ 0) — this design point is outside Eq. 3a's scope entirely; use §304.1.2(b) or another applicable method.`};
+    }
+    t = alt.t; Yused = alt.Y; thickWallYSwitch = true; thickWallIterations = alt.iterations;
+  }
+  const thinWallOK = t < OD/6;
   const tm = t + c + mech;
   const tmin = tm / (1 - millPct/100);
-  const thinWallOK = t < OD/6;
 
   const rowMatch = matchScheduleRow(OD);
   const scheduleChoice = chooseLightestSchedule(rowMatch, tmin);
 
-  return {S, E, W, Y, YGroup:Yr.group, sLookup, t, tm, tmin, thinWallOK, ratioCheck, rowMatch, scheduleChoice};
+  return {S, E, W, Y:Yused, YTableValue:Y, YGroup, thickWallYSwitch, thickWallIterations, sLookup, t, tm, tmin, thinWallOK, ratioCheck, rowMatch, scheduleChoice};
 }
 
 /* ---------------- Main calculation ---------------- */
@@ -1281,8 +1362,11 @@ function runCalc(){
   const c = toMM(parseFloat(document.getElementById('in-corr').value), document.getElementById('in-corr-unit').value);
   const mech = toMM(parseFloat(document.getElementById('in-mech').value), document.getElementById('in-mech-unit').value);
   const millPct = parseFloat(document.getElementById('in-mill').value);
+  const Yin = parseFloat(document.getElementById('in-y').value);
+  const yGroupSel = document.getElementById('in-y-group').value;
+  const YGroupIn = yGroupSel==='custom' ? 'custom (manual entry)' : yGroupSel;
 
-  const r = computeCore({m, P, OD, tempC, E, W, c, mech, millPct});
+  const r = computeCore({m, P, OD, tempC, E, W, c, mech, millPct, Y:Yin, YGroup:YGroupIn});
   if(r.error){
     const label = r.error==='no-material' ? 'Cannot calculate.' : r.error==='thick-wall' ? 'Thick-wall regime detected.' : 'Cannot calculate.';
     warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>${label}</b> ${r.message}</div></div>`;
@@ -1291,20 +1375,24 @@ function runCalc(){
     return;
   }
 
-  const {S,Y,YGroup,sLookup,t,tm,tmin,thinWallOK,ratioCheck} = r;
+  const {S,Y,YTableValue,YGroup,thickWallYSwitch,thickWallIterations,sLookup,t,tm,tmin,thinWallOK,ratioCheck} = r;
 
   document.getElementById('res-t').innerHTML = fmt(t)+'<span class="u">mm</span>';
   document.getElementById('res-tm').innerHTML = fmt(tm)+'<span class="u">mm</span>';
   document.getElementById('res-tmin').innerHTML = fmt(tmin)+'<span class="u">mm</span>';
-  document.getElementById('res-badge').innerHTML = thinWallOK
-    ? `<span class="badge pass">✓ Thin-wall OK</span>`
-    : `<span class="badge fail">⚠ Near thick-wall limit</span>`;
+  document.getElementById('res-badge').innerHTML = thickWallYSwitch
+    ? `<span class="badge pass">✓ t ≥ D/6 — solved with alternate Y = (d+2c)/(D+d+2c)</span>`
+    : `<span class="badge pass">✓ Thin-wall OK (t &lt; D/6, table Y valid)</span>`;
 
   renderSchedulePanel(OD, tmin);
 
   const sLine = sLookup.exact
     ? `S  (allowable stress)       = ${fmt(S)} MPa   [exact table value @ ${fmt(tempC)}°C — Ref: ${m.ref||'NOT RECORDED'}]`
     : `S  (allowable stress)       = ${fmt(S)} MPa   [interpolated between ${sLookup.t0}°C:${sLookup.s0}MPa and ${sLookup.t1}°C:${sLookup.s1}MPa — Ref: ${m.ref||'NOT RECORDED'}]`;
+
+  const yLine = thickWallYSwitch
+    ? `Y  (t ≥ D/6 — table Y of ${fmt(YTableValue)} not valid; solved iteratively with Y = (d+2c)/(D+d+2c), ${thickWallIterations} iter.)  = ${fmt(Y)}`
+    : `Y  (coefficient @ ${fmt(tempC)}°C, group: ${YGroup})     = ${fmt(Y)}   [Table 304.1.1-1 — verify against your licensed copy]`;
 
   document.getElementById('calc-steps').innerHTML =
 `<span class="eq">Eq. 3a (ASME B31.3 §304.1.2a):</span>  t = P·D / [2(S·E·W + P·Y)]
@@ -1314,7 +1402,7 @@ function runCalc(){
   ${sLine}
   E  (quality factor)         = ${fmt(E)}
   W  (weld strength factor)   = ${fmt(W)}
-  Y  (coefficient @ ${fmt(tempC)}°C, group: ${YGroup})     = ${fmt(Y)}   [Table 304.1.1 — verify against your licensed copy]
+  ${yLine}
 
   t   = (${fmt(P)} × ${fmt(OD)}) / [2 × (${fmt(S)} × ${fmt(E)} × ${fmt(W)} + ${fmt(P)} × ${fmt(Y)})]
       = ${fmt(t)} mm
@@ -1327,13 +1415,13 @@ function runCalc(){
         = ${fmt(tm)} / (1 − ${fmt(millPct)}%)
         = ${fmt(tmin)} mm   ← minimum nominal wall thickness to specify/order
 
-  Thin-wall validity (t < D/6):  ${thinWallOK ? 'OK — thin-wall formula applicable' : 'CHECK — approaching thick-wall limit, review manually'}
+  Thin-wall check (t < D/6):  ${thinWallOK ? 'OK — table Y applicable' : (thickWallYSwitch ? 'Was NOT met — alternate Y formula used instead of the table (see above)' : 'CHECK — review manually')}
   P/SE = ${(P/(S*E)).toFixed(4)}  (must be ≤ 0.385 for Eq. 3a — ${ratioCheck? 'FAILED':'OK'})`;
 
   document.getElementById('results-card').style.display = 'block';
   document.getElementById('batch-results-card').style.display = 'none';
   document.getElementById('results-placeholder').style.display = 'none';
-  window._lastCalc = {m,S,P,OD,tempC,E,W,Y,c,mech,millPct,t,tm,tmin};
+  window._lastCalc = {m,S,P,OD,tempC,E,W,Y,YGroup,thickWallYSwitch,c,mech,millPct,t,tm,tmin};
 }
 
 /* ---------------- Excel export ---------------- */
@@ -1369,7 +1457,7 @@ function exportCalc(){
     ["Allowable Stress S", c.S, "MPa"],
     ["Quality Factor E", c.E, ""],
     ["Weld Strength Factor W", c.W, ""],
-    ["Y Coefficient (suggested — verify)", c.Y, ""],
+    ["Y Coefficient (user-confirmed group: " + (c.YGroup||'n/a') + (c.thickWallYSwitch?', via t≥D/6 alternate formula':'') + ")", c.Y, ""],
     ["Corrosion Allowance c", c.c, "mm"],
     ["Mechanical Allowance", c.mech, "mm"],
     ["Mill Undertolerance", c.millPct, "%"],
@@ -1405,13 +1493,13 @@ function switchMode(mode){
 
 const LINE_LIST_HEADERS = ["Line No / Tag","NPS","Custom OD (mm)","Piping Class","Material Spec/Grade",
   "Design Pressure","Pressure Unit","Design Temperature","Temperature Unit",
-  "Joint Type E Override","W Override","Corrosion Allowance Override (mm)",
+  "Joint Type E Override","W Override","Y Group Override","Corrosion Allowance Override (mm)",
   "Mechanical Allowance Override (mm)","Mill Undertolerance Override (%)",
   "Contractor Selected Schedule","Contractor Nominal WT Override (mm)","Remarks"];
 
 function downloadLineListTemplate(){
-  const example1 = ["6-P-1042-B3C1","6","","B1C3(N)","","4.2","MPa","350","C","","","","","","40 / STD","","contractor doc says Sch 40"];
-  const example2 = ["2-P-1043-N1F1","2","","N1F1","ASTM A106 Gr. B","9.7","bar","45","C","","","","","","","","calculation only — no contractor value to verify"];
+  const example1 = ["6-P-1042-B3C1","6","","B1C3(N)","","4.2","MPa","350","C","","","","","","","40 / STD","","contractor doc says Sch 40"];
+  const example2 = ["2-P-1043-N1F1","2","","N1F1","ASTM A106 Gr. B","9.7","bar","45","C","","","ferritic","","","","","calculation only — no contractor value to verify"];
   const ws = XLSX.utils.aoa_to_sheet([LINE_LIST_HEADERS, example1, example2]);
   const instr = XLSX.utils.aoa_to_sheet([
     ["Line List template — instructions"],
@@ -1427,6 +1515,7 @@ function downloadLineListTemplate(){
     ["Design Temperature / Temperature Unit — e.g. 350 / C. Units: C or F."],
     ["Joint Type E Override — optional. Leave blank to take the value from the PMS (if used) or the project default set in Step 3."],
     ["W Override — optional weld strength reduction factor override. Leave blank for PMS/default."],
+    ["Y Group Override — optional. One of: ferritic, austenitic, nickelAlloy (UNS N06617/N08800/N08810/N08825 ONLY), otherDuctile, grayIron. This tool does NOT guess metallurgy for batch rows from the material text — leave blank only if the PMS supplies a 'Y Group' column or the project default (Step 3) is correct for this line; otherwise set it explicitly. Do not use 'nickelAlloy' for a nickel alloy outside the four listed UNS numbers — use 'otherDuctile' instead."],
     ["Corrosion / Mechanical Allowance / Mill Undertolerance Overrides — optional, same logic: blank = PMS value = project default."],
     ["Contractor Selected Schedule — OPTIONAL, only fill if you are verifying a contractor-issued Pipe Wall Thickness document. Enter the schedule label exactly as in this tool's chart (e.g. '40 / STD', '80 / XS', 'XXS'). If filled, this tool looks up the nominal WT for that schedule/OD and compares it to its own calculated t_min."],
     ["Contractor Nominal WT Override (mm) — OPTIONAL. Use instead of 'Contractor Selected Schedule' when the contractor's OD is outside this tool's schedule chart (NPS >8\", or a non-standard OD), or when you already know the contractor's nominal WT number directly."],
@@ -1442,18 +1531,18 @@ function downloadLineListTemplate(){
 }
 
 const PMS_HEADERS = ["Piping Class","Size From (NPS)","Size To (NPS)","Material Spec/Grade","Joint Type E",
-  "W","Corrosion Allowance (mm)","Mechanical Allowance (mm)","Mill Undertolerance (%)","Schedule/Rating (ref.)","Remarks"];
+  "W","Y Group","Corrosion Allowance (mm)","Mechanical Allowance (mm)","Mill Undertolerance (%)","Schedule/Rating (ref.)","Remarks"];
 
 function downloadPmsTemplate(){
   // Example rows below mirror a real project Line Class Sheet (Pipe section only) — one row per size
   // range, since material/joint/schedule commonly change across the range within a single class.
   const rows = [
-    ["A1A1","0.5","1.5","ASTM A53 Gr. B","1.00","1.00","1.5","0","12.5","SCH80","SMLS, PE"],
-    ["A1A1","2","6","ASTM A53 Gr. B","1.00","1.00","1.5","0","12.5","SCH40","SMLS, BE"],
-    ["A1A1","8","12","ASTM A53 Gr. B","1.00","1.00","1.5","0","12.5","SCH30","SMLS, BE"],
-    ["A1A1","14","24","ASTM A53 Gr. B","1.00","1.00","1.5","0","12.5","SCH20","SMLS, BE"],
-    ["A1A1","26","36","API 5L Gr. B PSL1","1.00","1.00","1.5","0","12.5","STD","DSAW, 100%RT, BE"],
-    ["A1A1","38","48","API 5L Gr. B PSL1","1.00","1.00","1.5","0","12.5","XS","DSAW, 100%RT, BE"],
+    ["A1A1","0.5","1.5","ASTM A53 Gr. B","1.00","1.00","ferritic","1.5","0","12.5","SCH80","SMLS, PE"],
+    ["A1A1","2","6","ASTM A53 Gr. B","1.00","1.00","ferritic","1.5","0","12.5","SCH40","SMLS, BE"],
+    ["A1A1","8","12","ASTM A53 Gr. B","1.00","1.00","ferritic","1.5","0","12.5","SCH30","SMLS, BE"],
+    ["A1A1","14","24","ASTM A53 Gr. B","1.00","1.00","ferritic","1.5","0","12.5","SCH20","SMLS, BE"],
+    ["A1A1","26","36","API 5L Gr. B PSL1","1.00","1.00","ferritic","1.5","0","12.5","STD","DSAW, 100%RT, BE"],
+    ["A1A1","38","48","API 5L Gr. B PSL1","1.00","1.00","ferritic","1.5","0","12.5","XS","DSAW, 100%RT, BE"],
   ];
   const ws = XLSX.utils.aoa_to_sheet([PMS_HEADERS, ...rows]);
   const instr = XLSX.utils.aoa_to_sheet([
@@ -1468,6 +1557,7 @@ function downloadPmsTemplate(){
     ["Material Spec/Grade — must exactly match a 'Spec / Grade' entry in this tool's Material Database."],
     ["Joint Type E — enter the NUMERIC value yourself (e.g. 1.00 for seamless or double-welded 100% RT, 0.85 for ERW) per Table A-1B/§302.3.4. This tool does NOT infer E from weld-type text (SMLS/DSAW/ERW/etc.) in your Description column — that interpretation must be made by the engineer once, here."],
     ["W — the class default weld strength reduction factor (usually 1.00 unless the class governs creep-range service, per Table 302.3.5)."],
+    ["Y Group — the Table 304.1.1-1 material group for this class/size range. One of: ferritic, austenitic, nickelAlloy (UNS N06617/N08800/N08810/N08825 ONLY), otherDuctile, grayIron. This tool does NOT infer this from the material text — enter it explicitly, same reasoning as Joint Type E above."],
     ["Corrosion Allowance (mm) / Mechanical Allowance (mm) / Mill Undertolerance (%) — class defaults for this size range; can still be overridden per line in the Line List."],
     ["Schedule/Rating (ref.) — informational only, e.g. the Schedule/Rating shown on the Line Class Sheet for this range. Not used in the calculation itself, but useful as a cross-reference and can be typed into a line's 'Contractor Selected Schedule' column if you want to verify against it."],
     ["Remarks — free text (e.g. weld/end-type description such as 'SMLS, PE' or 'DSAW, 100%RT, BE'), not used in the calculation."],
@@ -1638,6 +1728,7 @@ function runBatchCalc(){
   const defJointSel = document.getElementById('batch-default-joint').value;
   const defE = parseFloat(defJointSel);
   const defW = parseFloat(document.getElementById('batch-default-w').value);
+  const defYGroup = document.getElementById('batch-default-y-group').value;
   const defCorr = parseFloat(document.getElementById('batch-default-corr').value);
   const defMech = parseFloat(document.getElementById('batch-default-mech').value);
   const defMill = parseFloat(document.getElementById('batch-default-mill').value);
@@ -1671,10 +1762,17 @@ function runBatchCalc(){
     const mech = num(row['Mechanical Allowance Override (mm)']) ?? (pmsRow ? num(pmsRow['Mechanical Allowance (mm)']) : null) ?? defMech;
     const millPct = num(row['Mill Undertolerance Override (%)']) ?? (pmsRow ? num(pmsRow['Mill Undertolerance (%)']) : null) ?? defMill;
 
-    const r = computeCore({m, P, OD, tempC, E, W, c, mech, millPct});
-    if(r.error){ rec.status = r.error==='thick-wall' ? 'FAIL' : 'ERROR'; rec.message=r.message; rec.P=P; rec.OD=OD; rec.tempC=tempC; results.push(rec); return; }
+    const yGroupRaw = ((row['Y Group Override']||'').toString().trim()) || (pmsRow && pmsRow['Y Group'] ? pmsRow['Y Group'].toString().trim() : '') || defYGroup;
+    if(!Y_TABLE[yGroupRaw]){
+      rec.status='ERROR'; rec.message=`Unrecognized Y Group "${yGroupRaw}" — must be one of: ${Object.keys(Y_TABLE).join(', ')}.`; results.push(rec); return;
+    }
+    const Y = yValueForGroup(yGroupRaw, tempC);
+    const YGroup = yGroupRaw;
 
-    Object.assign(rec, {P,OD,tempC,E,W,c,mech,millPct,S:r.S,Y:r.Y,t:r.t,tm:r.tm,tmin:r.tmin,thinWallOK:r.thinWallOK,sRef:m.ref||'NOT RECORDED'});
+    const r = computeCore({m, P, OD, tempC, E, W, c, mech, millPct, Y, YGroup});
+    if(r.error){ rec.status = (r.error==='thick-wall'||r.error==='thick-wall-invalid') ? 'FAIL' : 'ERROR'; rec.message=r.message; rec.P=P; rec.OD=OD; rec.tempC=tempC; results.push(rec); return; }
+
+    Object.assign(rec, {P,OD,tempC,E,W,c,mech,millPct,S:r.S,Y:r.Y,YGroup:r.YGroup,thickWallYSwitch:r.thickWallYSwitch,t:r.t,tm:r.tm,tmin:r.tmin,thinWallOK:r.thinWallOK,sRef:m.ref||'NOT RECORDED'});
     if(r.scheduleChoice && r.scheduleChoice.sch){
       rec.schedule = r.scheduleChoice.sch; rec.scheduleWT = r.scheduleChoice.wt;
     } else if(r.rowMatch){
@@ -1682,7 +1780,7 @@ function runBatchCalc(){
     } else {
       rec.schedule = 'manual (no chart for this OD)'; rec.scheduleWT = null;
     }
-    rec.status = r.thinWallOK ? 'OK' : 'WARN';
+    rec.status = (r.thinWallOK || r.thickWallYSwitch) ? 'OK' : 'WARN';
 
     // ---- Deviation check vs contractor-stated Schedule/WT (optional, per-line) ----
     const contractorRes = resolveContractorWT(row, r.rowMatch);
@@ -1775,17 +1873,18 @@ function renderBatchResults(results){
 function exportBatchCalc(){
   if(!window._lastBatch || !window._lastBatch.length){ alert('Run a batch calculation first.'); return; }
   const header = ["Line No / Tag","Material","Material Source","Size / OD (mm)","Design Pressure (MPa)","Design Temp (°C)",
-    "S (MPa)","S Reference","E","W","Y","Corrosion Allow. (mm)","Mech. Allow. (mm)","Mill Undertol. (%)",
+    "S (MPa)","S Reference","E","W","Y","Y Group","Corrosion Allow. (mm)","Mech. Allow. (mm)","Mill Undertol. (%)",
     "t — pressure design thickness (mm)","t_m — t + allowances (mm)","t_min — min. specified thickness (mm)",
     "Nearest Schedule (calc.)","Thin-wall OK?","Contractor WT (mm)","Contractor Source","Margin vs t_min (%)",
     "Deviation Status","Deviation Note","Status","Notes"];
   const rows = window._lastBatch.map(r=>{
     if(r.message){
-      return [r.lineTag, r.material||'', r.materialSource||'', '', r.P??'', r.tempC??'', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', r.status, r.message];
+      return [r.lineTag, r.material||'', r.materialSource||'', '', r.P??'', r.tempC??'', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', r.status, r.message];
     }
     return [r.lineTag, r.material, r.materialSource, fmt(r.OD), fmt(r.P), fmt(r.tempC),
-      fmt(r.S), r.sRef, fmt(r.E), fmt(r.W), fmt(r.Y), fmt(r.c), fmt(r.mech), fmt(r.millPct),
-      fmt(r.t), fmt(r.tm), fmt(r.tmin), r.schedule, r.thinWallOK?'Yes':'No — check thick-wall',
+      fmt(r.S), r.sRef, fmt(r.E), fmt(r.W), fmt(r.Y), r.YGroup||'', fmt(r.c), fmt(r.mech), fmt(r.millPct),
+      fmt(r.t), fmt(r.tm), fmt(r.tmin), r.schedule,
+      r.thinWallOK ? 'Yes' : (r.thickWallYSwitch ? 'No — solved via alternate Y=(d+2c)/(D+d+2c)' : 'No — check thick-wall'),
       fmt2(r.contractorWT), r.contractorSource||'', r.marginPct!==undefined?r.marginPct.toFixed(1):'',
       r.deviationStatus||'not verified', r.deviationNote||'', r.status, ''];
   });

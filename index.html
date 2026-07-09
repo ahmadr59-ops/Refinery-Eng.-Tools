@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>MechToolkit — Pipe Wall Thickness (ASME B31.3)</title>
+<title>MechToolkit — Piping Engineering Tools</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600;700&family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Sans+Condensed:wght@600;700&display=swap" rel="stylesheet">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
@@ -203,6 +203,49 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
 .note-popover{position:absolute;max-width:320px;background:var(--ink);color:#E4E9EB;padding:13px 15px;border-radius:6px;font-size:12px;font-family:var(--sans);line-height:1.6;box-shadow:var(--shadow-pop);z-index:300;}
 .note-popover b{color:#fff;}
 .unit-suffix{display:flex;align-items:center;padding:0 12px;border:1.5px solid var(--line-strong);border-left:none;background:var(--panel-alt);font-family:var(--mono);font-size:13px;border-top-right-radius:4px;border-bottom-right-radius:4px;color:#3A464E;}
+
+/* ── TOP-LEVEL MODULE TABS ── */
+.module-tabs{display:flex;gap:0;background:var(--ink);border-bottom:2px solid #0d161e;padding:0 42px;}
+.module-tab{font-family:var(--cond);font-weight:700;font-size:13px;letter-spacing:.02em;padding:11px 22px;background:transparent;border:none;color:#7C8A93;cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:color .15s,border-color .15s;}
+.module-tab:hover{color:#DDE3E7;}
+.module-tab.active{color:var(--amber);border-bottom-color:var(--amber);}
+.module-tab .mtag{font-family:var(--mono);font-size:10px;color:var(--amber);margin-right:6px;opacity:.7;}
+.module-tab.active .mtag{opacity:1;}
+.module-panel{display:none;}.module-panel.active{display:block;}
+
+/* ── MS: material selection module ── */
+.ms-layout{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}
+.ms-side{position:sticky;top:20px;}
+.ms-flag{display:flex;align-items:center;gap:10px;padding:10px 14px;border-radius:4px;font-size:12.5px;line-height:1.5;margin-bottom:8px;border:1px solid transparent;}
+.ms-flag.sour{background:#FBF0E4;border-color:#EFD9A8;border-left:3px solid var(--amber-dk);color:#6B4E13;}
+.ms-flag.lethal{background:var(--rust-wash);border-color:#E7BEB2;border-left:3px solid var(--rust);color:#7A2E1D;}
+.ms-flag.cryo{background:#EAF0F3;border-color:#B0CEDE;border-left:3px solid var(--steel);color:#1F3D52;}
+.ms-flag.ht{background:#FFF7E6;border-color:#F5DFA0;border-left:3px solid #C8860A;color:#6B4500;}
+.ms-flag.h2{background:#F0EDF8;border-color:#C5B8E8;border-left:3px solid #6B4EC8;color:#3A2570;}
+.ms-flag.ok{background:var(--teal-wash);border-color:rgba(62,124,110,.35);border-left:3px solid var(--teal);color:#1F4034;}
+.ms-result-card{background:var(--ink);color:#fff;border-radius:var(--radius);overflow:hidden;margin-bottom:16px;}
+.ms-result-card .rc-head{padding:14px 18px;border-bottom:1px solid rgba(255,255,255,.1);font-family:var(--cond);font-weight:700;font-size:13px;color:#8FA0AC;letter-spacing:.04em;text-transform:uppercase;}
+.ms-result-card .rc-body{padding:18px;}
+.ms-kv{display:flex;justify-content:space-between;align-items:baseline;padding:7px 0;border-bottom:1px solid rgba(255,255,255,.07);}
+.ms-kv:last-child{border-bottom:none;}
+.ms-kv .k{font-family:var(--mono);font-size:11px;color:#8FA0AC;letter-spacing:.05em;text-transform:uppercase;}
+.ms-kv .v{font-family:var(--mono);font-size:13.5px;color:var(--amber);font-weight:600;text-align:right;max-width:60%;}
+.ms-kv .v.ok{color:#5DCBA8;}
+.ms-kv .v.warn{color:#E8A33D;}
+.ms-kv .v.danger{color:#E07070;}
+.ms-verify-list{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);overflow:hidden;}
+.ms-verify-list .vl-head{font-family:var(--cond);font-weight:700;font-size:13px;padding:12px 16px;border-bottom:1px solid var(--line);background:var(--panel-alt);color:var(--rust);display:flex;align-items:center;gap:8px;}
+.ms-verify-item{display:flex;align-items:flex-start;gap:10px;padding:10px 16px;border-bottom:1px solid var(--line-soft);font-size:12px;line-height:1.55;}
+.ms-verify-item:last-child{border-bottom:none;}
+.ms-verify-item .vi-std{font-family:var(--mono);font-size:10.5px;color:var(--steel-dk);background:var(--steel-wash);padding:2px 7px;border-radius:3px;white-space:nowrap;flex-shrink:0;margin-top:1px;}
+.ms-handoff-btn{width:100%;font-family:var(--cond);font-weight:700;font-size:14px;letter-spacing:.02em;background:var(--teal);color:#fff;border:none;padding:14px 20px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;gap:10px;box-shadow:0 2px 10px rgba(62,124,110,.3);margin-top:16px;}
+.ms-handoff-btn:hover{background:#2D6057;transform:translateY(-1px);}
+.ms-handoff-btn:active{transform:translateY(0);}
+.ms-handoff-btn:disabled{background:#8AA8A3;cursor:not-allowed;transform:none;}
+.ms-placeholder{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:60px 24px;text-align:center;background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);}
+.ms-step-badge{display:inline-flex;width:22px;height:22px;border-radius:50%;background:var(--steel-dk);color:#fff;align-items:center;justify-content:center;font-family:var(--mono);font-weight:700;font-size:11px;flex-shrink:0;}
+.ms-handoff-flash{animation:handoff-flash .6s ease;}
+@keyframes handoff-flash{0%{box-shadow:0 0 0 0 rgba(62,107,138,.6);}70%{box-shadow:0 0 0 12px rgba(62,107,138,0);}100%{box-shadow:none;}}
 </style>
 </head>
 <body>
@@ -214,13 +257,150 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
       <h1>Refinery Eng. Tools</h1>
     </div>
     <nav class="topbrand-nav">
-      <div class="nav-item active"><span class="n">▣</span><span>Pipe Wall Thickness</span></div>
+      <div class="nav-item active" id="nav-ms" onclick="switchModule('ms')" style="cursor:pointer;"><span class="n">▣</span><span>Material Selection</span></div>
+      <div class="nav-item" id="nav-wt" onclick="switchModule('wt')" style="cursor:pointer;"><span class="n">▣</span><span>Pipe Wall Thickness</span></div>
       <div class="nav-item disabled"><span class="n">▢</span><span>Flange Rating Check</span></div>
       <div class="nav-item disabled"><span class="n">▢</span><span>Pipe Support Spacing</span></div>
     </nav>
     <div class="topbrand-credit">Developed by Ahmad Rezazadeh</div>
   </header>
 
+  <!-- ══ MODULE: MATERIAL SELECTION ══════════════════════════════════════════ -->
+  <div id="module-ms" class="module-panel active">
+  <main>
+    <div class="titleblock" style="margin-bottom:26px;">
+      <div class="tb-head">
+        <h2>Pipe Material Selection</h2>
+        <div class="std">ASME B31.3 · B16.5 · NACE MR0175 · API 941</div>
+      </div>
+      <div class="tb-grid">
+        <div class="tb-cell"><label>Project</label><input id="ms-project" placeholder="Project name"></div>
+        <div class="tb-cell"><label>Line No. / Tag</label><input id="ms-line" placeholder="e.g. 6-P-1042-B3C1"></div>
+        <div class="tb-cell"><label>Service / Fluid</label><input id="ms-service" placeholder="e.g. Crude feed"></div>
+        <div class="tb-cell"><label>Prepared by</label><input id="ms-by" placeholder="Name"></div>
+      </div>
+    </div>
+
+    <div class="ms-layout">
+    <!-- LEFT: INPUTS -->
+    <div>
+      <section class="card" style="margin-bottom:20px;">
+        <div class="card-h"><h3><span class="idx">1</span>Process Conditions</h3></div>
+        <div class="card-body">
+          <div class="warn"><div>⚠</div><div><b>Design conditions, not operating.</b> Apply margins before entering: T_design ≥ T_op + 15°C (min), P_design = max(P_op × 1.10, P_op + 1.75 barg).</div></div>
+          <div class="grid2" style="margin-top:14px;">
+            <div class="field">
+              <label>Design Temperature <span class="req">*</span></label>
+              <div class="unit-row"><input id="ms-temp" type="number" placeholder="e.g. 320"><span class="unit-suffix">°C</span></div>
+              <div class="sub">Enter design temperature (operating + margin)</div>
+            </div>
+            <div class="field">
+              <label>Design Pressure <span class="req">*</span></label>
+              <div class="unit-row"><input id="ms-press" type="number" placeholder="e.g. 42.0"><span class="unit-suffix">barg</span></div>
+            </div>
+            <div class="field">
+              <label>Minimum Design Metal Temp (MDMT)</label>
+              <div class="unit-row"><input id="ms-mdmt" type="number" placeholder="e.g. -10"><span class="unit-suffix">°C</span></div>
+              <div class="sub">Lowest expected process or ambient temperature for this line</div>
+            </div>
+            <div class="field">
+              <label>H₂S Partial Pressure</label>
+              <div class="unit-row"><input id="ms-h2s" type="number" placeholder="e.g. 0.0005" step="0.0001"><span class="unit-suffix">MPa</span></div>
+              <div class="sub">Enter 0 if no H₂S. Threshold per NACE MR0175: 0.0003 MPa</div>
+            </div>
+            <div class="field">
+              <label>H₂ Present at Elevated T/P?</label>
+              <select id="ms-h2"><option value="no">No</option><option value="yes">Yes — Nelson Curve check required</option></select>
+            </div>
+            <div class="field">
+              <label>Fluid Category</label>
+              <select id="ms-fluid">
+                <option value="normal">Normal hydrocarbon (crude, naphtha, gas oil, LPG…)</option>
+                <option value="steam">Steam / condensate</option>
+                <option value="utility">Utility (air, cooling water, N₂, instrument air)</option>
+                <option value="acid">Acid / chloride corrosive (HCl, H₂SO₄, Cl⁻ environment)</option>
+                <option value="amine">Amine (MEA, DEA, MDEA)</option>
+                <option value="caustic">Caustic (NaOH)</option>
+                <option value="lethal">Lethal service (HF, high-conc H₂S, phosgene…)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-h"><h3><span class="idx">2</span>Additional Parameters</h3></div>
+        <div class="card-body">
+          <div class="grid2">
+            <div class="field">
+              <label>Pipe Type Preference</label>
+              <select id="ms-pipetype">
+                <option value="seamless">Seamless (process lines — preferred)</option>
+                <option value="erw">ERW (utility / low-pressure only)</option>
+              </select>
+            </div>
+            <div class="field">
+              <label>Project Corrosion Allowance Override</label>
+              <div class="unit-row"><input id="ms-ca-override" type="number" placeholder="Leave blank = auto" step="0.5"><span class="unit-suffix">mm</span></div>
+              <div class="sub">Leave blank — tool selects based on service</div>
+            </div>
+          </div>
+          <button class="calc-btn" onclick="runMaterialSelection()" style="margin-top:8px;">Run Material Selection</button>
+        </div>
+      </section>
+    </div>
+
+    <!-- RIGHT: RESULTS -->
+    <div class="ms-side">
+      <div id="ms-placeholder" class="ms-placeholder">
+        <div style="font-size:28px;opacity:.3;">⚗</div>
+        <div style="font-family:var(--cond);font-weight:700;font-size:15px;color:#5C6B74;">Awaiting input</div>
+        <div class="hint" style="max-width:260px;margin:0;">Enter design conditions and press Run — material recommendation appears here.</div>
+      </div>
+      <div id="ms-results" style="display:none;">
+        <!-- flags -->
+        <div id="ms-flags" style="margin-bottom:14px;"></div>
+
+        <!-- main result card -->
+        <div class="ms-result-card" id="ms-result-card">
+          <div class="rc-head">Pipe Material Recommendation</div>
+          <div class="rc-body">
+            <div class="ms-kv"><span class="k">ASTM Grade</span><span class="v" id="ms-r-grade">—</span></div>
+            <div class="ms-kv"><span class="k">Material Type</span><span class="v" id="ms-r-type">—</span></div>
+            <div class="ms-kv"><span class="k">Pipe Form</span><span class="v" id="ms-r-form">—</span></div>
+            <div class="ms-kv"><span class="k">ASME B16.5 Class</span><span class="v" id="ms-r-class">—</span></div>
+            <div class="ms-kv"><span class="k">Corrosion Allowance</span><span class="v" id="ms-r-ca">—</span></div>
+            <div class="ms-kv"><span class="k">MDMT Status</span><span class="v" id="ms-r-mdmt">—</span></div>
+            <div class="ms-kv"><span class="k">B16.5 Material Group</span><span class="v" id="ms-r-b165grp">—</span></div>
+          </div>
+        </div>
+
+        <!-- verify list -->
+        <div class="ms-verify-list" style="margin-bottom:14px;">
+          <div class="vl-head">⚠ Engineer Must Verify</div>
+          <div id="ms-verify-items"></div>
+        </div>
+
+        <!-- handoff button -->
+        <button class="ms-handoff-btn" id="ms-handoff-btn" onclick="handoffToWallThickness()" disabled>
+          <span>→</span> Open in Wall Thickness Calculator
+        </button>
+        <div id="ms-handoff-note" style="font-size:11.5px;color:#7C8A93;text-align:center;margin-top:8px;display:none;"></div>
+      </div>
+    </div>
+    </div><!-- ms-layout -->
+
+    <footer class="legal" style="margin-top:32px;">
+      <b>Engineering decision-support tool — not a substitute for licensed standards or peer review.</b>
+      Material selection logic follows ASME B31.3 service classification, ASME B16.5 P-T rating methodology, and NACE MR0175/ISO 15156 sour service criteria.
+      All numerical values (allowable stress, P-T ratings, NACE thresholds) must be independently verified against the applicable licensed standard edition before use in any formal engineering deliverable.
+      Developed by Ahmad Rezazadeh.
+    </footer>
+  </main>
+  </div><!-- /module-ms -->
+
+  <!-- ══ MODULE: WALL THICKNESS ════════════════════════════════════════════════ -->
+  <div id="module-wt" class="module-panel">
   <main>
     <!-- MODE TABS -->
     <div class="mode-tabs">
@@ -585,7 +765,8 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
       <b>Scope &amp; limitations:</b> This module implements the thin-wall straight-pipe formula of ASME B31.3 §304.1.2(a), Eq. 3a (t = PD / 2(SEW+PY)). Eq. 3b (the inside-diameter alternate form of Eq. 3a) is NOT implemented — the OCR text extracted from the supplied standard PDF for Eq. 3b was not reliably legible, and rather than risk transcribing an incorrect pressure-design formula, this tool omits it entirely; use eq. 3a or your licensed copy of the Code directly for that case. For P/SE &gt; 0.385 the tool stops and flags an error (§304.1.2b). For t ≥ D/6 the tool computes a data-point thickness using the Code's own extended Y = (d+2c)/(D+d+2c) (from the Table 304.1.1-1 nomenclature note), solved iteratively — but per §304.1.2(b) this regime requires the engineer's own "special consideration of factors such as theory of failure, effects of fatigue, and thermal stress," so this number is never presented as a compliant result by itself. This tool does not cover bends, miters, branch reinforcement, or external pressure (collapse, §304.1.3). The Schedule-matching table covers NPS 1/2"–24" per ASME B36.10M; larger or non-standard sizes show OD for reference but require manual schedule selection. This is a personal calculation aid; it is not a substitute for review and sign-off by a qualified engineer against the current, licensed edition of ASME B31.3, and applicable project specifications.
     </footer>
   </main>
-</div>
+  </div><!-- /module-wt -->
+</div><!-- /.app -->
 
 <script>
 /* ---------------- Unit helpers ---------------- */
@@ -2057,6 +2238,268 @@ renderMaterialTable();
 renderMaterialSelect();
 renderNpsSelect();
 document.getElementById('tb-date').valueAsDate = new Date();
+
+/* ══════════════════════════════════════════════════════════════════════════
+   MODULE: MATERIAL SELECTION  (ms_*)
+   All identifiers prefixed ms_ — zero overlap with existing code.
+   ══════════════════════════════════════════════════════════════════════════ */
+
+/* ── Module switching ── */
+function switchModule(id){
+  ['ms','wt'].forEach(m=>{
+    document.getElementById('module-'+m).classList.toggle('active', m===id);
+    const nav = document.getElementById('nav-'+m);
+    if(nav) nav.classList.toggle('active', m===id);
+  });
+}
+
+/* ── B16.5 P-T Rating table (Material Group 1.1 — Carbon Steel A105/A106 Gr.B)
+   Source: ASME B16.5 Table 2-1.1. Values in barg (converted from psi).
+   These are REFERENCE ESTIMATES for class selection logic only.
+   Engineer MUST verify from actual B16.5 table for their material group & temperature. ── */
+const MS_PT_RATINGS = {
+  // [tempC, class150_barg, class300_barg, class600_barg, class900_barg, class1500_barg, class2500_barg]
+  150:  [19.6,  51.1,  102.1, 153.2, 255.3, 425.5],
+  200:  [17.7,  46.6,   93.2, 139.8, 232.9, 388.2],
+  250:  [15.8,  45.1,   90.2, 135.3, 225.5, 375.8],
+  300:  [13.8,  43.8,   87.6, 131.3, 218.8, 364.7],
+  325:  [12.1,  43.1,   86.2, 129.3, 215.4, 359.0],
+  350:  [10.2,  42.3,   84.6, 126.9, 211.5, 352.5],
+  375:  [ 8.1,  40.0,   80.0, 120.0, 200.0, 333.4],
+  400:  [ 6.6,  33.2,   66.4,  99.6, 166.0, 276.6],
+};
+
+function ms_getPressureClass(P_barg, T_degC){
+  // Find temperature row — use nearest equal-or-lower temp breakpoint
+  const temps = Object.keys(MS_PT_RATINGS).map(Number).sort((a,b)=>a-b);
+  let row = null;
+  for(let i = temps.length-1; i >= 0; i--){
+    if(T_degC >= temps[i]){ row = MS_PT_RATINGS[temps[i]]; break; }
+  }
+  if(!row) row = MS_PT_RATINGS[150]; // below 150°C — use ambient row
+  const classes = [150,300,600,900,1500,2500];
+  for(let i=0;i<row.length;i++){
+    if(row[i] > P_barg) return classes[i];
+  }
+  return null; // exceeds Class 2500 — specialist required
+}
+
+function ms_b165Group(astmGrade){
+  if(/a106|a53|a333|a335 p11|a335 p22|a335 p91|a672|a671|api 5l/i.test(astmGrade)) return 'Group 1.1 / 1.2 / 1.9 / 1.10 (verify per B16.5 Table 1A)';
+  if(/a312 tp316l|a312 tp316/i.test(astmGrade)) return 'Group 2.3 (verify per B16.5 Table 1A)';
+  if(/a312 tp304/i.test(astmGrade)) return 'Group 2.1 (verify per B16.5 Table 1A)';
+  return 'Verify in ASME B16.5 Table 1A for this grade';
+}
+
+/* ── Core decision engine ── */
+function runMaterialSelection(){
+  const T   = parseFloat(document.getElementById('ms-temp').value);
+  const P   = parseFloat(document.getElementById('ms-press').value);
+  const MDMT = parseFloat(document.getElementById('ms-mdmt').value);
+  const H2S  = parseFloat(document.getElementById('ms-h2s').value) || 0;
+  const H2   = document.getElementById('ms-h2').value;
+  const fluid = document.getElementById('ms-fluid').value;
+  const pipeType = document.getElementById('ms-pipetype').value;
+  const caOverride = parseFloat(document.getElementById('ms-ca-override').value);
+
+  if(isNaN(T)||isNaN(P)){
+    alert('Design Temperature and Design Pressure are required.');
+    return;
+  }
+
+  // Convert P from barg to MPa for NACE check
+  const P_MPa = P * 0.1;
+  const H2S_pp = H2S; // already in MPa
+
+  // ── Flags ──
+  const flags = [];
+  const verifyItems = [];
+
+  const isSour    = H2S_pp > 0.0003;
+  const isLethal  = fluid === 'lethal';
+  const isCryo    = !isNaN(MDMT) && MDMT < -29;
+  const isAcid    = fluid === 'acid';
+  const isAmine   = fluid === 'amine';
+  const isCaustic = fluid === 'caustic';
+  const isHT_P11  = T > 425 && T <= 540;
+  const isHT_P22  = T > 540 && T <= 593;
+  const isHT_P91  = T > 593;
+  const isLTCS    = !isNaN(MDMT) && MDMT >= -45 && MDMT < -29;
+  const isCryoSS  = !isNaN(MDMT) && MDMT < -45;
+  const isH2      = H2 === 'yes';
+
+  if(isSour)   flags.push({cls:'sour',   icon:'⚠', text:`<b>SOUR SERVICE</b> — H₂S partial pressure ${H2S_pp.toFixed(4)} MPa exceeds 0.0003 MPa threshold per NACE MR0175/ISO 15156. NACE compliance mandatory: hardness ≤ HRC 22, PWHT on all welds, restricted materials.`});
+  if(isLethal) flags.push({cls:'lethal', icon:'⛔', text:`<b>LETHAL SERVICE</b> per ASME B31.3 §300.2 — 100% radiographic examination required on all welds. Socket weld and threaded connections NOT permitted.`});
+  if(isCryoSS) flags.push({cls:'cryo',  icon:'❄', text:`<b>CRYOGENIC SERVICE</b> (MDMT ${MDMT}°C, below −45°C) — Austenitic Stainless Steel required. Consult cryogenic specialist.`});
+  if(isLTCS)   flags.push({cls:'cryo',  icon:'❄', text:`<b>LOW TEMPERATURE SERVICE</b> (MDMT ${MDMT}°C) — Low Temperature Carbon Steel (LTCS) required. Impact testing mandatory per ASME B31.3 Figure 323.2.2.`});
+  if(isHT_P91) flags.push({cls:'ht',    icon:'🌡', text:`<b>CREEP ZONE</b> — Design temperature ${T}°C exceeds 593°C. P91 (9Cr-1Mo-V) or higher alloy required. Mandatory creep/metallurgy specialist review.`});
+  if(isHT_P22) flags.push({cls:'ht',    icon:'🌡', text:`<b>HIGH TEMPERATURE SERVICE</b> — Design temperature ${T}°C in 540–593°C range. Chrome-Moly P22 (2.25Cr-1Mo) required.`});
+  if(isHT_P11) flags.push({cls:'ht',    icon:'🌡', text:`<b>HIGH TEMPERATURE SERVICE</b> — Design temperature ${T}°C in 425–540°C range. Chrome-Moly P11 (1.25Cr-0.5Mo) required.`});
+  if(isH2)     flags.push({cls:'h2',    icon:'⚗', text:`<b>HYDROGEN SERVICE</b> — High-temperature hydrogen present. Nelson Curve check mandatory per API 941 before finalising material.`});
+  if(isAcid)   flags.push({cls:'sour',  icon:'⚠', text:`<b>ACID / CHLORIDE SERVICE</b> — Carbon steel may be unsuitable. Stainless Steel 316L or higher alloy recommended. Confirm with corrosion engineer.`});
+  if(isAmine)  flags.push({cls:'sour',  icon:'⚠', text:`<b>AMINE SERVICE</b> — Carbon steel susceptible to amine corrosion and stress corrosion cracking. PWHT mandatory on all welds per API RP 945.`});
+  if(isCaustic)flags.push({cls:'sour',  icon:'⚠', text:`<b>CAUSTIC SERVICE</b> — Risk of caustic stress corrosion cracking. PWHT mandatory. Refer to API RP 571.`});
+  if(flags.length===0) flags.push({cls:'ok', icon:'✓', text:`<b>NORMAL SERVICE</b> — No special service flags detected for this set of conditions.`});
+
+  // ── Material selection ──
+  let grade='', desc='', form='', ca=0, mdmtNote='', b165grp='', matchKey='';
+
+  if(isCryoSS){
+    grade='ASTM A312 TP304 or TP316L'; desc='Austenitic Stainless Steel'; form='Seamless'; ca=0; matchKey='ASTM A312 TP316L';
+    b165grp = 'Group 2.3 (verify per B16.5 Table 1A)';
+  } else if(isLTCS){
+    grade='ASTM A333 Gr. 6'; desc='Low Temperature Carbon Steel'; form='Seamless'; ca=1.5; matchKey='ASTM A333 Gr. 6';
+    b165grp = 'Group 1.2 (verify per B16.5 Table 1A)';
+  } else if(isHT_P91){
+    grade='ASTM A335 P91'; desc='9Cr-1Mo-V Chrome-Moly'; form='Seamless'; ca=0; matchKey='ASTM A335 P91';
+    b165grp = 'Group 1.13 (verify per B16.5 Table 1A)';
+  } else if(isHT_P22){
+    grade='ASTM A335 P22'; desc='2.25Cr-1Mo Chrome-Moly'; form='Seamless'; ca=0; matchKey='ASTM A335 P22';
+    b165grp = 'Group 1.10 (verify per B16.5 Table 1A)';
+  } else if(isHT_P11){
+    grade='ASTM A335 P11'; desc='1.25Cr-0.5Mo Chrome-Moly'; form='Seamless'; ca=0; matchKey='ASTM A335 P11';
+    b165grp = 'Group 1.9 (verify per B16.5 Table 1A)';
+  } else if(isAcid){
+    grade='ASTM A312 TP316L'; desc='Austenitic Stainless Steel 316L — confirm with corrosion engineer'; form='Seamless'; ca=0; matchKey='ASTM A312 TP316L';
+    b165grp = 'Group 2.3 (verify per B16.5 Table 1A)';
+  } else {
+    // Normal CS service (sour or non-sour)
+    grade='ASTM A106 Gr. B'; desc='Carbon Steel Seamless Pipe'; form='Seamless'; ca=isSour?3.0:1.5; matchKey='ASTM A106 Gr. B';
+    b165grp = 'Group 1.1 (verify per B16.5 Table 1A)';
+  }
+
+  // Override pipe form if ERW selected (only allow for non-critical)
+  if(pipeType==='erw' && !isSour && !isLethal && !isHT_P11 && !isHT_P22 && !isHT_P91 && !isLTCS && !isCryoSS){
+    form = 'ERW permitted for utility service — verify project specification';
+  }
+
+  // Override CA
+  if(!isNaN(caOverride) && caOverride > 0) ca = caOverride;
+  else if(fluid==='utility') ca = Math.min(ca||1.5, 1.5);
+  else if(isSour) ca = Math.max(ca, 3.0);
+  else if(ca===0 && grade.includes('A106')) ca = 1.5;
+
+  // Pressure class
+  const pressClass = ms_getPressureClass(P, T);
+  const classDisplay = pressClass ? `Class ${pressClass}` : 'Exceeds Class 2500 — Specialist Required';
+  const classColor = pressClass ? (pressClass<=300?'ok':pressClass<=600?'warn':'danger') : 'danger';
+
+  // MDMT note
+  if(!isNaN(MDMT)){
+    if(grade.includes('A106')){
+      mdmtNote = MDMT >= -29 ? `${MDMT}°C — verify exemption in B31.3 Fig. 323.2.2 for calculated wall thickness` : `${MDMT}°C — BELOW −29°C limit for A106 Gr.B → upgrade required`;
+    } else if(grade.includes('A333')){
+      mdmtNote = `${MDMT}°C — A333 Gr.6 rated to −46°C min. Impact test required.`;
+    } else if(grade.includes('A312')){
+      mdmtNote = `${MDMT}°C — Austenitic SS rated to −254°C. Verify low-temp test at MDMT.`;
+    } else {
+      mdmtNote = `${MDMT}°C — Verify per B31.3 Figure 323.2.2`;
+    }
+  } else {
+    mdmtNote = 'Not entered — provide MDMT for impact test assessment';
+  }
+
+  // ── Mandatory verify items ──
+  verifyItems.push({text:`Confirm Design Pressure and Design Temperature with Process Engineer — margins applied?`, std:'Process Datasheet'});
+  if(isSour) verifyItems.push({text:`Verify H₂S partial pressure calculation. Confirm NACE MR0175 / ISO 15156 Part 2 applicability and material compliance documentation.`, std:'NACE MR0175'});
+  verifyItems.push({text:`Verify P-T Rating for ${classDisplay} at ${T}°C for your material group from the actual ASME B16.5 table — the class shown is an estimate.`, std:'ASME B16.5 §2'});
+  verifyItems.push({text:`Extract Allowable Stress (S) for ${grade} at ${T}°C from ASME B31.3 Table A-1 — required for wall thickness calculation in the next module.`, std:'B31.3 Table A-1'});
+  if(!isNaN(MDMT)) verifyItems.push({text:`Check MDMT exemption curve in ASME B31.3 Figure 323.2.2 for the calculated pipe wall thickness. Determine if impact testing is required.`, std:'B31.3 Fig 323.2.2'});
+  if(isH2) verifyItems.push({text:`Check pipe material against API 941 Nelson Curves at design temperature (${T}°C) and hydrogen partial pressure before finalising.`, std:'API 941'});
+  if(isLethal) verifyItems.push({text:`Lethal Service: confirm 100% RT on all welds per B31.3 Chapter VII and no socket-weld or threaded fittings per §300.2.`, std:'B31.3 Ch.VII'});
+  if(isAmine) verifyItems.push({text:`Amine service: confirm PWHT on all CS welds per API RP 945 and check hardness limits.`, std:'API RP 945'});
+  if(isCaustic) verifyItems.push({text:`Caustic service: confirm PWHT and stress-relief requirements per API RP 571 and project specification.`, std:'API RP 571'});
+  verifyItems.push({text:`Submit completed selection to Lead Piping Engineer for review and approval before using in any formal deliverable.`, std:'Project QA'});
+
+  // ── Render ──
+  document.getElementById('ms-placeholder').style.display = 'none';
+  document.getElementById('ms-results').style.display = 'block';
+
+  // Flags
+  document.getElementById('ms-flags').innerHTML = flags.map(f=>
+    `<div class="ms-flag ${f.cls}">${f.icon} ${f.text}</div>`
+  ).join('');
+
+  // Result fields
+  document.getElementById('ms-r-grade').textContent = grade;
+  document.getElementById('ms-r-type').textContent  = desc;
+  document.getElementById('ms-r-form').textContent  = form;
+  document.getElementById('ms-r-class').textContent = classDisplay;
+  document.getElementById('ms-r-class').className   = 'v '+classColor;
+  document.getElementById('ms-r-ca').textContent    = ca > 0 ? ca.toFixed(1)+' mm' : '0 mm (alloy — no CA)';
+  document.getElementById('ms-r-mdmt').textContent  = mdmtNote;
+  document.getElementById('ms-r-b165grp').textContent = b165grp;
+
+  // Verify items
+  document.getElementById('ms-verify-items').innerHTML = verifyItems.map(v=>
+    `<div class="ms-verify-item"><span class="vi-std">${v.std}</span><span>${v.text}</span></div>`
+  ).join('');
+
+  // Handoff button — enable if material exists in wall thickness calculator
+  const handoffBtn = document.getElementById('ms-handoff-btn');
+  const handoffNote = document.getElementById('ms-handoff-note');
+  const materialInDB = materials.findIndex(m => m.spec.includes(matchKey.replace('ASTM ','').split(' ')[0]) && m.spec.toLowerCase().includes(matchKey.toLowerCase().split(' ').pop().toLowerCase()));
+  const bestMatch = materials.findIndex(m => matchKey && m.spec.toLowerCase().startsWith(matchKey.toLowerCase().substring(0,10)));
+
+  // Try to find closest match in existing material DB
+  let dbIdx = -1;
+  materials.forEach((m,i)=>{
+    const g = matchKey.toLowerCase();
+    if(m.spec.toLowerCase().includes(g.replace('astm ','').replace(' gr. b','').replace(' gr.b','').trim())) dbIdx = i;
+  });
+  // Fallback: partial match on key fragment
+  if(dbIdx===-1){
+    const frag = matchKey.replace('ASTM ','').replace(' Gr. B','').trim().toLowerCase();
+    materials.forEach((m,i)=>{ if(m.spec.toLowerCase().includes(frag) && dbIdx===-1) dbIdx=i; });
+  }
+
+  window._ms_lastResult = { grade, matchKey, dbIdx, ca, pressClass };
+
+  if(dbIdx !== -1){
+    handoffBtn.disabled = false;
+    handoffNote.style.display = 'block';
+    handoffNote.textContent = `Will pre-fill: "${materials[dbIdx].spec}" in the Wall Thickness Calculator`;
+  } else {
+    handoffBtn.disabled = true;
+    handoffNote.style.display = 'block';
+    handoffNote.textContent = `"${grade}" not yet in the Material Database — add it there first, then re-run.`;
+  }
+}
+
+/* ── Handoff: pre-populate Wall Thickness Calculator ── */
+function handoffToWallThickness(){
+  const res = window._ms_lastResult;
+  if(!res || res.dbIdx === -1) return;
+
+  // Switch to wall thickness module
+  switchModule('wt');
+
+  // Pre-populate material
+  const matSel = document.getElementById('in-material');
+  if(matSel){
+    matSel.value = res.dbIdx;
+    onMaterialChange();
+  }
+
+  // Pre-populate corrosion allowance
+  if(res.ca > 0){
+    const caIn = document.getElementById('in-corr');
+    if(caIn) caIn.value = res.ca.toFixed(1);
+  }
+
+  // Flash the material field to signal it was populated
+  if(matSel){
+    matSel.classList.add('ms-handoff-flash');
+    setTimeout(()=>matSel.classList.remove('ms-handoff-flash'), 700);
+  }
+
+  // Show note in WTC
+  const warnEl = document.getElementById('calc-warning');
+  if(warnEl){
+    warnEl.innerHTML = `<div class="warn" style="margin-top:12px;">⟵ <b>From Material Selection module:</b> Material pre-filled as <b>${materials[res.dbIdx].spec}</b>. Verify design temperature and pressure inputs, then calculate.</div>`;
+    setTimeout(()=>{ if(warnEl.innerHTML.includes('Material Selection')) warnEl.innerHTML=''; }, 12000);
+  }
+}
 </script>
 </body>
 </html>

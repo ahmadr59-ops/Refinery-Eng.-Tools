@@ -2629,7 +2629,7 @@ function onReviewFileChosen(event){
       reviewDoc = model;
       status.className='sub';
       status.innerHTML = 'Loaded <b>'+escR(file.name)+'</b>'+(model.docMeta.docNo?' — doc '+escR(model.docMeta.docNo):'')+(model.docMeta.rev?' Rev. '+escR(model.docMeta.rev):'')+' — '+
-        model.classes.map(c=>'<b>'+escR(c.className)+'</b> ('+c.rows.length+' sizes × '+c.cases.length+' case'+(c.cases.length>1?'s':'')+')').join(', ') +
+        model.classes.map(c=>'<b>'+escR(c.className)+'</b> ('+c.rows.length+' sizes × '+c.caseDefs.length+' case'+(c.caseDefs.length>1?'s':'')+')').join(', ') +
         (model.skippedSheets.length? ' &nbsp;·&nbsp; skipped sheet(s): '+model.skippedSheets.map(escR).join(', ') : '');
       renderReviewMapping();
     }catch(err){

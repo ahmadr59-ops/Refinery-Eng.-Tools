@@ -163,6 +163,9 @@ footer.legal{margin-top:8px;font-size:11.5px;color:#8A97A0;line-height:1.65;bord
 .topbar{display:flex;justify-content:flex-end;margin-bottom:16px;}
 .topbar .small-btn{display:flex;align-items:center;gap:7px;}
 
+.scope-strip{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:#5C6B74;margin:0 0 18px;padding:7px 12px;background:var(--panel-alt);border:1px solid var(--line-soft);border-radius:4px;}
+.scope-strip .info-ic{white-space:nowrap;}
+
 /* ---- print: formal calc sheet (title block + results + breakdown) ---- */
 @media print{
   body{background:#fff;}
@@ -286,13 +289,9 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
       </div>
     </div>
 
-    <div class="warn" style="margin:0 0 20px;">
-      <div>⚠</div>
-      <div><b>Scope &amp; Limitations —</b> this tool covers <b>straight pipe under internal pressure per ASME B31.3-2024 §304.1.2 (Base Code only)</b>.
-      Outside its scope (evaluate separately): pipe bends after bending (§304.2.1 — intrados thickness usually governs), external pressure (§304.1.3),
-      branch reinforcement (§304.3), closures &amp; blanks (§304.4/304.5), High Pressure Piping (Chapter IX), Category M fluid service, severe cyclic
-      conditions, and nonmetallic piping. Minimum-temperature/impact-test rules (§323.2.2) are only flagged, not evaluated. Schedule charts:
-      ASME B36.10-2022 (NPS 1/8–48) and ASME B36.19-2022 (NPS 1/8–30), from the user-supplied official editions.</div>
+    <div class="scope-strip">
+      <span><b>Scope:</b> straight pipe · internal pressure · ASME B31.3-2024 §304.1.2 (Base Code) · charts B36.10/19-2022</span>
+      <button type="button" class="info-ic" onclick="toggleNote('scope',event)">ⓘ full scope &amp; limitations</button>
     </div>
 
     <div class="workspace" id="workspace">
@@ -322,32 +321,24 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
             <div class="unit-row" id="od-custom-row" style="margin-top:8px;display:none;"><input id="in-od" type="number" placeholder="OD, e.g. 168.28"><select id="in-od-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
           </div>
           <div class="field">
-            <label>Dimensional Standard (schedule chart)</label>
-            <select id="in-dim-std" onchange="onDimStdChange()">
-              <option value="auto">Auto — from material (stainless → B36.19)</option>
-              <option value="cs">ASME B36.10-2022 (carbon / alloy steel)</option>
-              <option value="ss">ASME B36.19-2022 (stainless — 5S/10S/40S/80S/160S)</option>
-            </select>
-            <div class="sub" id="dim-std-echo"></div>
-          </div>
-          <div class="field">
-            <label>Pressure Design Equation (§304.1.2a — either is permitted) <button type="button" class="info-ic" onclick="toggleNote('eq-choice',event)">ⓘ</button></label>
-            <select id="in-eq-choice" onchange="onEqChoiceChange()">
-              <option value="3a">Eq. 3a — t = PD / [2(SEW+PY)]  (outside diameter D)</option>
-              <option value="3b">Eq. 3b — t = P(d+2c) / [2(SEW−P(1−Y))]  (inside diameter d)</option>
-            </select>
-            <div class="unit-row" id="in-d-row" style="margin-top:8px;display:none;">
-              <input id="in-d" type="number" placeholder="d, e.g. 154.1">
-              <select id="in-d-unit"><option value="mm">mm</option><option value="in">in</option></select>
-            </div>
-            <div style="font-size:11px;color:#8a8a8a;margin-top:4px;">d = inside diameter, per §304.1.1(b) nomenclature: the <b>maximum</b> value allowable under the purchase specification. Enter it directly — this tool does not derive it for you.</div>
-          </div>
-          <div class="field">
             <label>Corrosion / Erosion Allowance, c <span class="req">*</span> <button type="button" class="info-ic" onclick="toggleNote('corrosion',event)">ⓘ</button></label>
             <div class="unit-row"><input id="in-corr" type="number" value="3.0"><select id="in-corr-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
           </div>
+          <div class="field">
+            <label>Y Coefficient — Material Group (Table 304.1.1-1) <span class="req">*</span> <button type="button" class="info-ic" onclick="toggleNote('y-coeff',event)">ⓘ</button></label>
+            <select id="in-y-group" onchange="onYGroupChange()">
+              <option value="ferritic">Ferritic steels</option>
+              <option value="austenitic">Austenitic steels</option>
+              <option value="nickelAlloy">Ni-Cr-Fe (UNS N06617/N08800/N08810/N08825 ONLY)</option>
+              <option value="otherDuctile">Other ductile metals</option>
+              <option value="grayIron">Cast iron</option>
+              <option value="custom">Custom / manual entry…</option>
+            </select>
+            <input id="in-y" type="number" step="0.01" value="0.4" style="margin-top:6px;">
+            <div id="y-group-warning" style="font-size:11.5px;color:var(--amber-dk);margin-top:6px;line-height:1.5;font-weight:600;"></div>
+          </div>
 
-          <div class="group-label">Joint &amp; tolerance (defaults — adjust if needed)</div>
+          <div class="group-label">Code factors &amp; tolerances (defaults — adjust if needed)</div>
           <div class="field">
             <label>Joint Type → Quality Factor Ej <button type="button" class="info-ic" onclick="toggleNote('joint-e',event)">ⓘ</button></label>
             <select id="in-joint" onchange="onJointChange()">
@@ -383,26 +374,34 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
             <div id="w-group-warning" style="font-size:11.5px;color:var(--amber-dk);margin-top:6px;line-height:1.5;font-weight:600;"></div>
           </div>
           <div class="field">
-            <label>Y Coefficient — Material Group (Table 304.1.1-1) <span class="req">*</span> <button type="button" class="info-ic" onclick="toggleNote('y-coeff',event)">ⓘ</button></label>
-            <select id="in-y-group" onchange="onYGroupChange()">
-              <option value="ferritic">Ferritic steels</option>
-              <option value="austenitic">Austenitic steels</option>
-              <option value="nickelAlloy">Ni-Cr-Fe (UNS N06617/N08800/N08810/N08825 ONLY)</option>
-              <option value="otherDuctile">Other ductile metals</option>
-              <option value="grayIron">Cast iron</option>
-              <option value="custom">Custom / manual entry…</option>
-            </select>
-            <input id="in-y" type="number" step="0.01" value="0.4" style="margin-top:6px;">
-            <div id="y-group-warning" style="font-size:11.5px;color:var(--amber-dk);margin-top:6px;line-height:1.5;font-weight:600;"></div>
-            <div style="font-size:11px;color:#8a8a8a;margin-top:4px;">Group is auto-suggested from the selected material's spec/description — <b>verify it matches the actual metallurgy before calculating</b> and correct it here if not.</div>
-          </div>
-          <div class="field">
             <label>Mechanical / Thread / Groove Allowance <button type="button" class="info-ic" onclick="toggleNote('mech-allow',event)">ⓘ</button></label>
             <div class="unit-row"><input id="in-mech" type="number" value="0"><select id="in-mech-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
           </div>
           <div class="field">
             <label>Mill Undertolerance <button type="button" class="info-ic" onclick="toggleNote('mill-undertol',event)">ⓘ</button></label>
-            <div class="unit-row"><input id="in-mill" type="number" value="12.5" style="flex:1"><span class="unit-suffix">%</span></div>
+            <div class="unit-row"><input id="in-mill" type="number" value="12.5" style="flex:1"><select id="in-mill-unit"><option value="%">%</option><option value="mm">mm</option></select></div>
+          </div>
+
+          <div class="group-label">Calculation options</div>
+          <div class="field">
+            <label>Pressure Design Equation (§304.1.2a) <button type="button" class="info-ic" onclick="toggleNote('eq-choice',event)">ⓘ</button></label>
+            <select id="in-eq-choice" onchange="onEqChoiceChange()">
+              <option value="3a">Eq. 3a — outside-diameter form (default)</option>
+              <option value="3b">Eq. 3b — inside-diameter form (requires d)</option>
+            </select>
+            <div class="unit-row" id="in-d-row" style="margin-top:8px;display:none;">
+              <input id="in-d" type="number" placeholder="d, e.g. 154.1">
+              <select id="in-d-unit"><option value="mm">mm</option><option value="in">in</option></select>
+            </div>
+          </div>
+          <div class="field">
+            <label>Dimensional Standard (schedule chart)</label>
+            <select id="in-dim-std" onchange="onDimStdChange()">
+              <option value="auto">Auto — from material (stainless → B36.19)</option>
+              <option value="cs">ASME B36.10-2022 (carbon / alloy steel)</option>
+              <option value="ss">ASME B36.19-2022 (stainless — 5S/10S/40S/80S/160S)</option>
+            </select>
+            <div class="sub" id="dim-std-echo"></div>
           </div>
         </div>
         <button class="calc-btn" onclick="runCalc()">Calculate required wall thickness</button>
@@ -503,8 +502,8 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
                   <input id="batch-default-mech" type="number" step="0.1" value="0">
                 </div>
                 <div class="field">
-                  <label>Default Mill Undertolerance (%)</label>
-                  <input id="batch-default-mill" type="number" step="0.1" value="12.5">
+                  <label>Default Mill Undertolerance</label>
+                  <div class="unit-row"><input id="batch-default-mill" type="number" step="0.1" value="12.5"><select id="batch-default-mill-unit"><option value="%">%</option><option value="mm">mm</option></select></div>
                 </div>
               </div>
             </div>
@@ -660,14 +659,15 @@ const fmt = n => (Math.round(n*1000)/1000).toString();
 // Short reference notes are hidden by default and only shown when the user clicks the ⓘ icon
 // next to the relevant field — keeps the form uncluttered while still surfacing the detail on demand.
 const NOTES = {
+  'scope': '<b>Scope &amp; Limitations.</b> This tool covers <b>straight pipe under internal pressure per ASME B31.3-2024 §304.1.2 (Base Code only)</b>. Outside its scope — evaluate separately: pipe bends after bending (§304.2.1, intrados thickness usually governs), external pressure (§304.1.3), branch reinforcement (§304.3), closures &amp; blanks (§304.4/304.5), High Pressure Piping (Chapter IX), Category M fluid service, severe cyclic conditions, and nonmetallic piping. Minimum-temperature / impact-test rules (§323.2.2) are only flagged, not evaluated. Schedule charts: ASME B36.10-2022 (NPS 1/8–48) and ASME B36.19-2022 (NPS 1/8–30), transcribed from the user-supplied official editions.',
   'nps-od': 'Selecting an NPS fills the OD from the active dimensional standard automatically — ASME B36.10-2022 (carbon/alloy, NPS 1/8–48) or ASME B36.19-2022 (stainless series 5S/10S/40S/80S/160S, NPS 1/8–30), chosen automatically from the material (override in the Dimensional Standard field). mm values are the 2022 editions\' own printed conversions. Choose the blank / Custom OD option for non-standard or HOLD sizes, or for B36.10 NPS 52–80 (no schedule designations in the standard).',
   'corrosion': 'Engineering judgment input — corrosivity of service, expected life. Not from a standard table.',
   'joint-e': 'Values transcribed directly from ASME B31.3-2024 Table 302.3.4-1 (Longitudinal Weld Joint Quality Factor, Ej). ERW and furnace butt weld are fixed factors and cannot be increased by additional examination (Note 1). Single vs. double butt weld and the level of radiography (none / spot / 100%) determine the value for electric fusion welds.',
   'weld-w': 'Values transcribed directly from ASME B31.3-2024 Table 302.3.5-1 (Weld Joint Strength Reduction Factor, W). Select the steel group matching your material — below the group\'s first tabulated temperature W=1.0 (General Note a); above its last tabulated temperature, W is the designer\'s responsibility and must be entered manually. Linear interpolation is used between tabulated points (also per the table\'s notes).',
   'y-coeff': 'Values transcribed directly from ASME B31.3-2024 Table 304.1.1-1 (Values of Coefficient Y for t &lt; D/6). The group is auto-suggested from the selected material\'s spec/description as a starting point ONLY — this is a text match, not a metallurgical determination, so <b>you must confirm the group is correct</b> (or pick the right one / enter a custom value) before relying on the result. The "Ni-Cr-Fe" row is restricted by the table itself to UNS N06617, N08800, N08810, N08825 — do not use it for other nickel alloys. If the calculated t comes out ≥ D/6, this tool switches from the table value to the code\'s own extended formula Y = (d+2c)/(D+d+2c) (from the Table 304.1.1-1 nomenclature) and solves iteratively — <b>but per §304.1.2(b), t ≥ D/6 (like P/SE &gt; 0.385) requires the engineer\'s special consideration of theory of failure, fatigue, and thermal stress; the extended-Y number is a data point, not by itself a demonstration of code compliance.</b>',
-  'eq-choice': 'ASME B31.3-2024 §304.1.2(a) permits EITHER eq. (3a), t = PD/[2(SEW+PY)] (outside-diameter form), OR eq. (3b), t = P(d+2c)/[2(SEW−P(1−Y))] (inside-diameter form) — both are transcribed exactly as printed in the Code. Both compute the same "t" per the §304.1.1(b) nomenclature, so the result feeds identically into tm = t + c + mechanical allowance regardless of which you choose. Eq. (3b) needs d entered directly (the maximum inside diameter allowable under the purchase specification) — this tool does not derive it from D, since D − 2×(nominal wall) depends on which schedule you eventually select, which would make the input circular/assumption-based. Both equations are subject to the same §304.1.2(a) validity limit, t &lt; D/6, and the same §304.1.2(b) P/SE ≤ 0.385 requirement.',
+  'eq-choice': 'ASME B31.3-2024 §304.1.2(a) permits EITHER eq. (3a), t = PD/[2(SEW+PY)] (outside-diameter form), OR eq. (3b), t = P(d+2c)/[2(SEW−P(1−Y))] (inside-diameter form) — both are transcribed exactly as printed in the Code. Both compute the same "t" per the §304.1.1(b) nomenclature, so the result feeds identically into tm = t + c + mechanical allowance regardless of which you choose. Eq. (3b) needs d entered directly — per §304.1.1(b) nomenclature, the <b>maximum</b> inside diameter allowable under the purchase specification (this tool does not derive it for you) — this tool does not derive it from D, since D − 2×(nominal wall) depends on which schedule you eventually select, which would make the input circular/assumption-based. Both equations are subject to the same §304.1.2(a) validity limit, t &lt; D/6, and the same §304.1.2(b) P/SE ≤ 0.385 requirement.',
   'mech-allow': 'Only applies to threaded, grooved, or bored components (§304.1.2(a)(3)).',
-  'mill-undertol': '12.5% is the common ASTM seamless-pipe default (e.g. A106/A335). Verify against the applicable ASTM spec for your selected material — plate/welded pipe tolerances differ.',
+  'mill-undertol': '<b>%</b> — for pipe with a percentage undertolerance: 12.5% is the common ASTM seamless default (e.g. A106/A335/A312 seamless). <b>mm</b> — for welded pipe made from plate (A671/A672/A691) and API 5L welded pipe, the minus tolerance is a fixed value set by the plate spec (e.g. ASTM A20) or the API 5L wall-tolerance table for the size/grade — enter that value in mm. Always verify against the applicable product specification; do not carry 12.5% onto plate-based welded pipe.',
   'warn-margin': 'Margin = (contractor WT − calculated t_min) / t_min. Below 0% is always FAIL (nonconforming per ASME B31.3 — t must be ≥ t_min). A small positive margin is still compliant but tight; this threshold flags it for a closer look.',
   'overcons-margin': 'Informational only — a very large excess margin is not a code violation, but often signals the wrong class/schedule was picked and may be worth an economy review.',
   'schedule-chart': '<b>Nearest Standard Schedule.</b> Dimensional data transcribed from the user-supplied official ASME B36.10-2022 and B36.19-2022 editions (machine cross-checked inch↔mm). The chart used follows the Dimensional Standard field: stainless materials default to the B36.19 series (5S/10S/40S/80S/160S), whose walls differ from same-number B36.10 schedules at NPS ≥ 10 (e.g. 12&quot; 40S = 9.52 vs Sch 40 = 10.31; 80S = 12.70 vs Sch 80 = 17.48). The highlighted row is the lightest schedule meeting or exceeding t_min.'
@@ -1305,7 +1305,7 @@ function renderNpsSelect(){
   }
   const echo = document.getElementById('dim-std-echo');
   const dimSel = document.getElementById('in-dim-std');
-  if(echo) echo.textContent = 'Schedule chart in use: ' + (DIM_STDS[key]||DIM_STDS.cs).longLabel + (dimSel && dimSel.value==='auto' ? ' (auto from material — override above if needed)' : '');
+  if(echo) echo.textContent = 'Chart: ' + (DIM_STDS[key]||DIM_STDS.cs).label + (dimSel && dimSel.value==='auto' ? ' (auto)' : '');
   onNpsChange();
 }
 function onDimStdChange(){ renderNpsSelect(); }
@@ -1538,11 +1538,13 @@ function chooseLightestSchedule(rowMatch, tmin){
 
 /* ---------------- Core thickness calculation (Eq. 3a or Eq. 3b, per §304.1.2a) — shared by single-line + batch ---------------- */
 // Returns {error} on failure, or a full result object on success.
-function computeCore({m, P, OD, tempC, E, W, c, mech, millPct, Y, YGroup, eqChoice, d, seriesKey}){
+function computeCore({m, P, OD, tempC, E, W, c, mech, millPct, millUnit, Y, YGroup, eqChoice, d, seriesKey}){
+  millUnit = millUnit==='mm' ? 'mm' : '%';
   seriesKey = seriesKey || guessSeriesForMaterial(m ? (m.spec+' '+(m.desc||'')) : '');
   eqChoice = eqChoice || '3a';
   if(!m || !m.s) return {error:'no-material', message:'Selected/matched material has no S-table entered in the Material Database.'};
   if([P,OD,tempC,E,W,c,millPct,Y].some(v=>isNaN(v)) || !OD || !P) return {error:'bad-input', message:'Missing or invalid input (pressure, OD, temperature, joint factor, Y coefficient, or mill tolerance).'};
+  if(millUnit==='%' && millPct>=100) return {error:'bad-input', message:'Mill undertolerance ≥ 100% is not valid — check the value/unit.'};
   if(eqChoice==='3b'){
     if(isNaN(d) || !d) return {error:'bad-input', message:'Eq. 3b selected but inside diameter d is missing or invalid.'};
     if(d >= OD) return {error:'bad-input', message:`Inside diameter d (${fmt(d)} mm) must be less than outside diameter D (${fmt(OD)} mm).`};
@@ -1606,12 +1608,14 @@ function computeCore({m, P, OD, tempC, E, W, c, mech, millPct, Y, YGroup, eqChoi
   }
   const thinWallOK = t < OD/6;
   const tm = t + c + mech;
-  const tmin = tm / (1 - millPct/100);
+  // % mode: t_min = t_m / (1 − tol) — percentage undertolerance (seamless ASTM default 12.5%).
+  // mm mode: t_min = t_m + tol — fixed minus tolerance (plate-based welded pipe per e.g. ASTM A20, API 5L tables).
+  const tmin = millUnit==='mm' ? tm + millPct : tm / (1 - millPct/100);
 
   const rowMatch = matchScheduleRow(OD, seriesKey);
   const scheduleChoice = chooseLightestSchedule(rowMatch, tmin);
 
-  return {S, E, W, Y:Yused, YTableValue:Y, YGroup, eqChoice, dInput:d, thickWallYSwitch, thickWallIterations, sLookup, t, tm, tmin, thinWallOK, ratioCheck, rowMatch, scheduleChoice, seriesKey, minTempNote};
+  return {S, E, W, Y:Yused, YTableValue:Y, YGroup, eqChoice, dInput:d, thickWallYSwitch, thickWallIterations, sLookup, t, tm, tmin, thinWallOK, ratioCheck, rowMatch, scheduleChoice, seriesKey, minTempNote, millUnit};
 }
 
 /* ---------------- Main calculation ---------------- */
@@ -1630,13 +1634,14 @@ function runCalc(){
   const c = toMM(parseFloat(document.getElementById('in-corr').value), document.getElementById('in-corr-unit').value);
   const mech = toMM(parseFloat(document.getElementById('in-mech').value), document.getElementById('in-mech-unit').value);
   const millPct = parseFloat(document.getElementById('in-mill').value);
+  const millUnit = document.getElementById('in-mill-unit') ? document.getElementById('in-mill-unit').value : '%';
   const Yin = parseFloat(document.getElementById('in-y').value);
   const yGroupSel = document.getElementById('in-y-group').value;
   const YGroupIn = yGroupSel==='custom' ? 'custom (manual entry)' : yGroupSel;
   const eqChoice = document.getElementById('in-eq-choice').value;
   const dIn = eqChoice==='3b' ? toMM(parseFloat(document.getElementById('in-d').value), document.getElementById('in-d-unit').value) : NaN;
 
-  const r = computeCore({m, P, OD, tempC, E, W, c, mech, millPct, Y:Yin, YGroup:YGroupIn, eqChoice, d:dIn, seriesKey:activeSeriesKey()});
+  const r = computeCore({m, P, OD, tempC, E, W, c, mech, millPct, millUnit, Y:Yin, YGroup:YGroupIn, eqChoice, d:dIn, seriesKey:activeSeriesKey()});
   if(r.error){
     const label = r.error==='no-material' ? 'Cannot calculate.' : r.error==='thick-wall' ? 'Thick-wall regime detected.' : 'Cannot calculate.';
     warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>${label}</b> ${r.message}</div></div>`;
@@ -1700,9 +1705,13 @@ function runCalc(){
       = ${fmt(t)} + ${fmt(c)} + ${fmt(mech)}
       = ${fmt(tm)} mm
 
-  t_min = t_m / (1 − mill undertolerance)
+  ${r.millUnit==='mm'
+    ? `t_min = t_m + mill undertolerance (fixed, mm)
+        = ${fmt(tm)} + ${fmt(millPct)}
+        = ${fmt(tmin)} mm   ← minimum nominal wall thickness to specify/order`
+    : `t_min = t_m / (1 − mill undertolerance)
         = ${fmt(tm)} / (1 − ${fmt(millPct)}%)
-        = ${fmt(tmin)} mm   ← minimum nominal wall thickness to specify/order
+        = ${fmt(tmin)} mm   ← minimum nominal wall thickness to specify/order`}
 
   Thin-wall check (t < D/6, per §304.1.2a):  ${thinWallOK ? `Met — table Y and eq. ${eqUsed} apply directly.` : (thickWallYSwitch ? 'NOT met. Per §304.1.2(b), this design point requires special consideration (theory of failure, effects of fatigue, thermal stress) beyond a formula result. The t above uses the code\'s own extended Y=(d+2c)/(D+d+2c) as a data point ONLY — it is NOT by itself a demonstration of code compliance.' : 'CHECK — review manually')}
   P/SE = ${(P/(S*E)).toFixed(4)}  (must be ≤ 0.385 per §304.1.2(b) — ${ratioCheck? 'FAILED':'OK'})`;
@@ -1710,7 +1719,7 @@ function runCalc(){
   document.getElementById('results-card').style.display = 'block';
   document.getElementById('batch-results-card').style.display = 'none';
   document.getElementById('results-placeholder').style.display = 'none';
-  window._lastCalc = {m,S,P,OD,tempC,E,W,Y,YGroup,eqChoice:eqUsed,d:dInput,thickWallYSwitch,c,mech,millPct,t,tm,tmin};
+  window._lastCalc = {m,S,P,OD,tempC,E,W,Y,YGroup,eqChoice:eqUsed,d:dInput,thickWallYSwitch,c,mech,millPct,millUnit:r.millUnit,t,tm,tmin};
 }
 
 /* ---------------- Print / PDF calc sheet ---------------- */
@@ -1759,7 +1768,7 @@ function exportCalc(){
     ["Y Coefficient (user-confirmed group: " + (c.YGroup||'n/a') + (c.thickWallYSwitch?', via t≥D/6 extended formula':'') + ")", c.Y, ""],
     ["Corrosion Allowance c", c.c, "mm"],
     ["Mechanical Allowance", c.mech, "mm"],
-    ["Mill Undertolerance", c.millPct, "%"],
+    ["Mill Undertolerance", c.millPct, c.millUnit||"%"],
     [],
     ["Result","Value","Unit"],
     ["Pressure design thickness t", c.t, "mm"],
@@ -1794,12 +1803,12 @@ const LINE_LIST_HEADERS = ["Line No / Tag","NPS","Custom OD (mm)","Piping Class"
   "Design Pressure","Pressure Unit","Design Temperature","Temperature Unit",
   "Joint Type E Override","W Override","Y Group Override","Equation Override (3a/3b)","Inside Diameter d Override (mm)",
   "Corrosion Allowance Override (mm)",
-  "Mechanical Allowance Override (mm)","Mill Undertolerance Override (%)","Schedule Series Override (B36.10/B36.19)",
+  "Mechanical Allowance Override (mm)","Mill Undertolerance Override (%)","Mill Undertolerance Override (mm)","Schedule Series Override (B36.10/B36.19)",
   "Contractor Selected Schedule","Contractor Nominal WT Override (mm)","Remarks"];
 
 function downloadLineListTemplate(){
-  const example1 = ["6-P-1042-B3C1","6","","B1C3(N)","","4.2","MPa","350","C","","","","","","","","","","40 / STD","","contractor doc says Sch 40"];
-  const example2 = ["2-P-1043-N1F1","2","","N1F1","ASTM A106 Gr. B","9.7","bar","45","C","","","ferritic","3b","49.3","","","","","","","calculation only — Eq. 3b, d from purchase spec"];
+  const example1 = ["6-P-1042-B3C1","6","","B1C3(N)","","4.2","MPa","350","C","","","","","","","","","","","40 / STD","","contractor doc says Sch 40"];
+  const example2 = ["2-P-1043-N1F1","2","","N1F1","ASTM A106 Gr. B","9.7","bar","45","C","","","ferritic","3b","49.3","","","","","","","","calculation only — Eq. 3b, d from purchase spec"];
   const ws = XLSX.utils.aoa_to_sheet([LINE_LIST_HEADERS, example1, example2]);
   const instr = XLSX.utils.aoa_to_sheet([
     ["Line List template — instructions"],
@@ -1819,6 +1828,7 @@ function downloadLineListTemplate(){
     ["Equation Override (3a/3b) — optional. '3a' (outside-diameter form, default) or '3b' (inside-diameter form). Both are permitted per §304.1.2(a); leave blank to use the project default (Step 3)."],
     ["Inside Diameter d Override (mm) — REQUIRED for any line resolving to eq. 3b (via this override or the project default), per §304.1.1(b): the maximum inside diameter allowable under the purchase specification. Not derived automatically from OD/schedule — rows using 3b without this filled in will error."],
     ["Corrosion / Mechanical Allowance / Mill Undertolerance Overrides — optional, same logic: blank = PMS value = project default."],
+    ["Mill Undertolerance Override (mm) — use INSTEAD of the (%) column for welded pipe made from plate (A671/A672/A691, API 5L welded): fixed minus tolerance in mm per the plate spec (e.g. ASTM A20) or API 5L wall-tolerance table. If both (%) and (mm) are filled, the (mm) value governs for that line."],
     ["Schedule Series Override (B36.10/B36.19) — optional. Leave blank to auto-select from the material (stainless grades → B36.19 series 5S/10S/40S/80S/160S; everything else → B36.10). Enter B36.10 or B36.19 to force a chart — e.g. a stainless line the project deliberately orders to B36.10 schedules."],
     ["Contractor Selected Schedule — OPTIONAL, only fill if you are verifying a contractor-issued Pipe Wall Thickness document. Enter the schedule label exactly as in this tool's chart (e.g. '40 / STD', '80 / XS', 'XXS'). If filled, this tool looks up the nominal WT for that schedule/OD and compares it to its own calculated t_min."],
     ["Contractor Nominal WT Override (mm) — OPTIONAL. Use instead of 'Contractor Selected Schedule' when the contractor's OD is outside this tool's schedule chart (NPS >8\", or a non-standard OD), or when you already know the contractor's nominal WT number directly."],
@@ -1834,18 +1844,18 @@ function downloadLineListTemplate(){
 }
 
 const PMS_HEADERS = ["Piping Class","Size From (NPS)","Size To (NPS)","Material Spec/Grade","Joint Type E",
-  "W","Y Group","Corrosion Allowance (mm)","Mechanical Allowance (mm)","Mill Undertolerance (%)","Schedule/Rating (ref.)","Remarks"];
+  "W","Y Group","Corrosion Allowance (mm)","Mechanical Allowance (mm)","Mill Undertolerance (%)","Mill Undertolerance (mm)","Schedule/Rating (ref.)","Remarks"];
 
 function downloadPmsTemplate(){
   // Example rows below mirror a real project Line Class Sheet (Pipe section only) — one row per size
   // range, since material/joint/schedule commonly change across the range within a single class.
   const rows = [
-    ["A1A1","0.5","1.5","ASTM A53 Gr. B","1.00","1.00","ferritic","1.5","0","12.5","SCH80","SMLS, PE"],
-    ["A1A1","2","6","ASTM A53 Gr. B","1.00","1.00","ferritic","1.5","0","12.5","SCH40","SMLS, BE"],
-    ["A1A1","8","12","ASTM A53 Gr. B","1.00","1.00","ferritic","1.5","0","12.5","SCH30","SMLS, BE"],
-    ["A1A1","14","24","ASTM A53 Gr. B","1.00","1.00","ferritic","1.5","0","12.5","SCH20","SMLS, BE"],
-    ["A1A1","26","36","API 5L Gr. B PSL1","1.00","1.00","ferritic","1.5","0","12.5","STD","DSAW, 100%RT, BE"],
-    ["A1A1","38","48","API 5L Gr. B PSL1","1.00","1.00","ferritic","1.5","0","12.5","XS","DSAW, 100%RT, BE"],
+    ["A1A1","0.5","1.5","ASTM A53 Gr. B","1.00","1.00","ferritic","1.5","0","12.5","","SCH80","SMLS, PE"],
+    ["A1A1","2","6","ASTM A53 Gr. B","1.00","1.00","ferritic","1.5","0","12.5","","SCH40","SMLS, BE"],
+    ["A1A1","8","12","ASTM A53 Gr. B","1.00","1.00","ferritic","1.5","0","12.5","","SCH30","SMLS, BE"],
+    ["A1A1","14","24","ASTM A53 Gr. B","1.00","1.00","ferritic","1.5","0","12.5","","SCH20","SMLS, BE"],
+    ["A1A1","26","36","API 5L Gr. B PSL1","1.00","1.00","ferritic","1.5","0","","0.5","STD","DSAW, 100%RT, BE"],
+    ["A1A1","38","48","API 5L Gr. B PSL1","1.00","1.00","ferritic","1.5","0","","0.5","XS","DSAW, 100%RT, BE"],
   ];
   const ws = XLSX.utils.aoa_to_sheet([PMS_HEADERS, ...rows]);
   const instr = XLSX.utils.aoa_to_sheet([
@@ -1862,6 +1872,7 @@ function downloadPmsTemplate(){
     ["W — the class default weld strength reduction factor (usually 1.00 unless the class governs creep-range service, per Table 302.3.5)."],
     ["Y Group — the Table 304.1.1-1 material group for this class/size range. One of: ferritic, austenitic, nickelAlloy (UNS N06617/N08800/N08810/N08825 ONLY), otherDuctile, grayIron. This tool does NOT infer this from the material text — enter it explicitly, same reasoning as Joint Type E above."],
     ["Corrosion Allowance (mm) / Mechanical Allowance (mm) / Mill Undertolerance (%) — class defaults for this size range; can still be overridden per line in the Line List."],
+    ["Mill Undertolerance (mm) — fill INSTEAD of the (%) column for size ranges supplied as welded pipe made from plate (A671/A672/A691, DSAW per API 5L): fixed minus tolerance in mm per the plate spec (e.g. ASTM A20) or the API 5L wall-tolerance table. If both are filled, (mm) governs. NOTE: the 26–48 DSAW example rows above intentionally leave (%) blank — enter the project's actual plate tolerance."],
     ["Schedule/Rating (ref.) — informational only, e.g. the Schedule/Rating shown on the Line Class Sheet for this range. Not used in the calculation itself, but useful as a cross-reference and can be typed into a line's 'Contractor Selected Schedule' column if you want to verify against it."],
     ["Remarks — free text (e.g. weld/end-type description such as 'SMLS, PE' or 'DSAW, 100%RT, BE'), not used in the calculation."],
     [""],
@@ -2038,6 +2049,7 @@ function runBatchCalc(){
   const defCorr = parseFloat(document.getElementById('batch-default-corr').value);
   const defMech = parseFloat(document.getElementById('batch-default-mech').value);
   const defMill = parseFloat(document.getElementById('batch-default-mill').value);
+  const defMillUnit = document.getElementById('batch-default-mill-unit') ? document.getElementById('batch-default-mill-unit').value : '%';
 
   const results = [];
   batchLineListRows.forEach((row,i)=>{
@@ -2066,7 +2078,17 @@ function runBatchCalc(){
     const W = num(row['W Override']) ?? (pmsRow ? num(pmsRow['W']) : null) ?? defW;
     const c = num(row['Corrosion Allowance Override (mm)']) ?? (pmsRow ? num(pmsRow['Corrosion Allowance (mm)']) : null) ?? defCorr;
     const mech = num(row['Mechanical Allowance Override (mm)']) ?? (pmsRow ? num(pmsRow['Mechanical Allowance (mm)']) : null) ?? defMech;
-    const millPct = num(row['Mill Undertolerance Override (%)']) ?? (pmsRow ? num(pmsRow['Mill Undertolerance (%)']) : null) ?? defMill;
+    // Mill undertolerance resolution: line mm > line % > PMS mm > PMS % > project default (with its unit).
+    const millOvMM = num(row['Mill Undertolerance Override (mm)']);
+    const millOvPct = num(row['Mill Undertolerance Override (%)']);
+    const pmsMillMM = pmsRow ? num(pmsRow['Mill Undertolerance (mm)']) : null;
+    const pmsMillPct = pmsRow ? num(pmsRow['Mill Undertolerance (%)']) : null;
+    let millPct, millUnit;
+    if(millOvMM!==null){ millPct=millOvMM; millUnit='mm'; }
+    else if(millOvPct!==null){ millPct=millOvPct; millUnit='%'; }
+    else if(pmsMillMM!==null){ millPct=pmsMillMM; millUnit='mm'; }
+    else if(pmsMillPct!==null){ millPct=pmsMillPct; millUnit='%'; }
+    else { millPct=defMill; millUnit=defMillUnit; }
 
     const yGroupRaw = ((row['Y Group Override']||'').toString().trim()) || (pmsRow && pmsRow['Y Group'] ? pmsRow['Y Group'].toString().trim() : '') || defYGroup;
     if(!Y_TABLE[yGroupRaw]){
@@ -2095,10 +2117,10 @@ function runBatchCalc(){
     else { rec.status='ERROR'; rec.message=`Unrecognized Schedule Series Override "${seriesRaw}" — use B36.10 or B36.19, or leave blank for auto.`; results.push(rec); return; }
     rec.seriesKey = seriesKey;
 
-    const r = computeCore({m, P, OD, tempC, E, W, c, mech, millPct, Y, YGroup, eqChoice:eqRaw, d, seriesKey});
+    const r = computeCore({m, P, OD, tempC, E, W, c, mech, millPct, millUnit, Y, YGroup, eqChoice:eqRaw, d, seriesKey});
     if(r.error){ rec.status = (r.error==='thick-wall'||r.error==='thick-wall-invalid') ? 'FAIL' : 'ERROR'; rec.message=r.message; rec.P=P; rec.OD=OD; rec.tempC=tempC; results.push(rec); return; }
 
-    Object.assign(rec, {P,OD,tempC,E,W,c,mech,millPct,S:r.S,Y:r.Y,YGroup:r.YGroup,eqChoice:r.eqChoice,d:r.dInput,thickWallYSwitch:r.thickWallYSwitch,t:r.t,tm:r.tm,tmin:r.tmin,thinWallOK:r.thinWallOK,sRef:m.ref||'NOT RECORDED',seriesKey:r.seriesKey,minTempNote:r.minTempNote||''});
+    Object.assign(rec, {P,OD,tempC,E,W,c,mech,millPct,S:r.S,Y:r.Y,YGroup:r.YGroup,eqChoice:r.eqChoice,d:r.dInput,thickWallYSwitch:r.thickWallYSwitch,t:r.t,tm:r.tm,tmin:r.tmin,thinWallOK:r.thinWallOK,sRef:m.ref||'NOT RECORDED',seriesKey:r.seriesKey,minTempNote:r.minTempNote||'',millUnit:r.millUnit});
     if(r.scheduleChoice && r.scheduleChoice.sch){
       rec.schedule = r.scheduleChoice.sch; rec.scheduleWT = r.scheduleChoice.wt;
     } else if(r.rowMatch){
@@ -2201,7 +2223,7 @@ function renderBatchResults(results){
 function exportBatchCalc(){
   if(!window._lastBatch || !window._lastBatch.length){ alert('Run a batch calculation first.'); return; }
   const header = ["Line No / Tag","Material","Material Source","Size / OD (mm)","Design Pressure (MPa)","Design Temp (°C)",
-    "S (MPa)","S Reference","E","W","Y","Y Group","Equation (3a/3b)","d — inside diam. used (mm)","Corrosion Allow. (mm)","Mech. Allow. (mm)","Mill Undertol. (%)",
+    "S (MPa)","S Reference","E","W","Y","Y Group","Equation (3a/3b)","d — inside diam. used (mm)","Corrosion Allow. (mm)","Mech. Allow. (mm)","Mill Undertol.",
     "t — pressure design thickness (mm)","t_m — t + allowances (mm)","t_min — min. specified thickness (mm)",
     "Nearest Schedule (calc.)","Schedule Basis (dimensional std.)","Thin-wall OK?","Contractor WT (mm)","Contractor Source","Margin vs t_min (%)",
     "Deviation Status","Deviation Note","Status","Notes"];
@@ -2210,7 +2232,7 @@ function exportBatchCalc(){
       return [r.lineTag, r.material||'', r.materialSource||'', '', r.P??'', r.tempC??'', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', '', r.status, r.message];
     }
     return [r.lineTag, r.material, r.materialSource, fmt(r.OD), fmt(r.P), fmt(r.tempC),
-      fmt(r.S), r.sRef, fmt(r.E), fmt(r.W), fmt(r.Y), r.YGroup||'', r.eqChoice||'3a', r.eqChoice==='3b'?fmt(r.d):'', fmt(r.c), fmt(r.mech), fmt(r.millPct),
+      fmt(r.S), r.sRef, fmt(r.E), fmt(r.W), fmt(r.Y), r.YGroup||'', r.eqChoice||'3a', r.eqChoice==='3b'?fmt(r.d):'', fmt(r.c), fmt(r.mech), fmt(r.millPct)+' '+(r.millUnit||'%'),
       fmt(r.t), fmt(r.tm), fmt(r.tmin), r.schedule, r.seriesKey ? DIM_STDS[r.seriesKey].longLabel : '',
       r.thinWallOK ? 'Yes' : (r.thickWallYSwitch ? 'No — §304.1.2(b): needs special consideration, extended-Y number is not sufficient alone' : 'No — check thick-wall'),
       fmt2(r.contractorWT), r.contractorSource||'', r.marginPct!==undefined?r.marginPct.toFixed(1):'',
@@ -2256,6 +2278,9 @@ const SELF_TESTS = [
  {name:'Eq. (3b): A106 Gr.B, d=154.06 mm, 4.2 MPa @ 350°C, c=3 mm — hand calc: t=2.91069',
   run(){ const r=computeCore({m:_mBySpec('ASTM A106 Gr. B'),P:4.2,OD:168.28,tempC:350,E:1,W:1,c:3,mech:0,millPct:12.5,Y:0.4,YGroup:'ferritic',eqChoice:'3b',d:154.06,seriesKey:'cs'});
     return !r.error && Math.abs(r.t-2.91069)<5e-4; }},
+ {name:'Fixed-mm mill undertolerance (welded/plate pipe): case 1 with 0.3 mm instead of 12.5% — hand calc: t_min = 5.95277 + 0.3 = 6.25277',
+  run(){ const r=computeCore({m:_mBySpec('ASTM A106 Gr. B'),P:4.2,OD:168.28,tempC:350,E:1,W:1,c:3,mech:0,millPct:0.3,millUnit:'mm',Y:0.4,YGroup:'ferritic',eqChoice:'3a',d:NaN,seriesKey:'cs'});
+    return !r.error && Math.abs(r.tmin-6.25277)<5e-4; }},
  {name:'§304.1.2(b) guard: P/SE = 60/138 = 0.4348 > 0.385 must be rejected',
   run(){ const r=computeCore({m:_mBySpec('ASTM A106 Gr. B'),P:60,OD:60.32,tempC:40,E:1,W:1,c:0,mech:0,millPct:12.5,Y:0.4,YGroup:'ferritic',eqChoice:'3a',d:NaN,seriesKey:'cs'});
     return r.error==='thick-wall'; }},

@@ -284,6 +284,7 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
       <button class="mode-tab active" id="tab-single" onclick="switchMode('single')">Single Line (manual)</button>
       <button class="mode-tab" id="tab-info" onclick="switchMode('info')">Pipe Information</button>
       <button class="mode-tab" id="tab-batch" onclick="switchMode('batch')">Batch Import (Line List / PMS)</button>
+      <button class="mode-tab" id="tab-review" onclick="switchMode('review')">Contractor Doc Review</button>
     </div>
 
     <div id="selftest-banner" style="display:none;"></div>
@@ -550,6 +551,38 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
         <div id="batch-warning"></div>
       </div>
     </section>
+    <!-- CONTRACTOR DOC REVIEW PANEL -->
+    <section class="card attached" id="panel-review" style="display:none;">
+      <div class="card-h"><h3><span class="idx">A.</span>Contractor Doc Review — Pipe Wall Thickness Calc Sheet</h3></div>
+      <div class="card-body">
+        <p class="hint">Import a contractor-issued <b>Pipe Wall Thickness Calculation</b> workbook (one sheet per line class; sizes as rows; design T/P cases as column groups). Every size &times; case is recomputed <b>independently</b> per ASME B31.3-2024 Eq. 3a against this tool's own Table A-1 material database, and every deviation is flagged for comment. Parsing is <b>anchor-based</b> (header rows are found by text — "NPS…", "T=…,P=…" — not by fixed cell addresses), so moderate layout differences between contractors are tolerated.</p>
+        <div class="grid2" style="margin-top:12px;">
+          <div class="field">
+            <label>Contractor calc workbook (.xlsx) <span class="req">*</span></label>
+            <input type="file" id="review-file" accept=".xlsx,.xls,.xlsm" onchange="onReviewFileChosen(event)">
+            <div id="review-file-status" class="sub">No file loaded.</div>
+          </div>
+          <div class="field">
+            <label>Review code system (per project contract)</label>
+            <select id="review-code-system">
+              <option value="abcd">A / B / C / D — Approved / As Noted / Revise &amp; Resubmit / Rejected</option>
+              <option value="1234">1 / 2 / 3 / 4 — Approved / As Noted / Revise &amp; Resubmit / Rejected</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Numeric match tolerance (%) — S / t / t<sub>m</sub> comparison</label>
+            <input id="review-num-tol" type="number" step="0.1" value="1.0">
+          </div>
+          <div class="field">
+            <label>Mill undertolerance for the independent check (%)</label>
+            <input id="review-mill" type="number" step="0.1" value="12.5">
+          </div>
+        </div>
+        <div id="review-mapping" style="margin:8px 0 14px;"></div>
+        <button class="calc-btn" onclick="runReviewCheck()">Run independent check</button>
+        <div id="review-warning"></div>
+      </div>
+    </section>
     <!-- PIPE INFORMATION -->
     <section class="card" id="panel-inspector" style="display:none;">
       <div class="card-h"><h3><span class="idx">A.</span>Pipe Information — Material &amp; Dimensional Data</h3>
@@ -626,6 +659,20 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
       <div class="card-body">
         <div id="batch-summary" style="margin-bottom:12px;"></div>
         <div style="overflow-x:auto;"><table class="sch" id="batch-results-table"></table></div>
+      </div>
+    </section>
+
+    <!-- CONTRACTOR REVIEW RESULTS -->
+    <section class="card" id="review-results-card" style="display:none;">
+      <div class="card-h"><h3><span class="idx">B.</span>Review Results — Independent Check vs Contractor Values</h3>
+        <div style="display:flex;gap:8px;">
+          <button class="small-btn" onclick="exportCommentSheet()">Export Comment Sheet (.xlsx)</button>
+          <button class="small-btn" onclick="exportReviewRegister()">Export comparison register (.xlsx)</button>
+        </div>
+      </div>
+      <div class="card-body">
+        <div id="review-summary" style="margin-bottom:12px;"></div>
+        <div id="review-classes"></div>
       </div>
     </section>
 
@@ -1918,11 +1965,14 @@ function switchMode(mode){
   document.getElementById('tab-single').classList.toggle('active', mode==='single');
   document.getElementById('tab-info').classList.toggle('active', mode==='info');
   document.getElementById('tab-batch').classList.toggle('active', mode==='batch');
+  document.getElementById('tab-review').classList.toggle('active', mode==='review');
   document.getElementById('panel-single').style.display = mode==='single' ? 'block' : 'none';
   document.getElementById('panel-batch').style.display = mode==='batch' ? 'block' : 'none';
   document.getElementById('panel-inspector').style.display = mode==='info' ? 'block' : 'none';
+  document.getElementById('panel-review').style.display = mode==='review' ? 'block' : 'none';
   document.getElementById('workspace').classList.toggle('mode-batch', mode!=='single');
   document.getElementById('batch-results-card').style.display='none';
+  document.getElementById('review-results-card').style.display = (mode==='review' && reviewResults) ? 'block' : 'none';
   if(mode==='info') renderInspectorSelects();
 }
 
@@ -2383,6 +2433,457 @@ function exportBatchCalc(){
   XLSX.utils.book_append_sheet(wb, ws, "Calc Register");
   const fname = (document.getElementById('tb-doc').value || 'pipe_thickness_batch_calc') + '.xlsx';
   XLSX.writeFile(wb, fname);
+}
+
+/* ================================================================
+   CONTRACTOR DOC REVIEW — anchor-based importer + independent check
+   + reviewer comment workflow (EPC-style Comment Sheet export).
+
+   Architecture (format-independence by design):
+     parser  →  canonical model (reviewDoc)  →  check engine  →  UI/exports
+   The engine and exports only ever see the canonical model, never the
+   spreadsheet layout — a new contractor format only needs a new parser.
+   ================================================================ */
+const REVIEW_CODE_SYSTEMS = {
+  abcd:[{code:'A',label:'Approved — no comment'},{code:'B',label:'Approved as noted'},{code:'C',label:'Revise & resubmit'},{code:'D',label:'Rejected'}],
+  '1234':[{code:'1',label:'Approved — no comment'},{code:'2',label:'Approved as noted'},{code:'3',label:'Revise & resubmit'},{code:'4',label:'Rejected'}],
+};
+function escR(s){ return (s===null||s===undefined) ? '' : s.toString().replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+function txtR(v){ return v===null||v===undefined ? '' : v.toString(); }
+
+let reviewDoc = null;       // canonical model of the imported contractor document
+let reviewResults = null;   // engine output: [{cls, rows:[rec]}]
+let reviewComments = null;  // [[{comment, code}]] parallel to reviewResults
+let reviewMatMap = {};      // doc material text -> {idx: DB index, yGroup}
+
+/* ---------- material auto-mapping ---------- */
+function normSpecR(s){ return (s||'').toString().toUpperCase().replace(/[^A-Z0-9]/g,''); }
+function guessDbMaterial(text){
+  const n = normSpecR(text);
+  if(!n) return -1;
+  let best=-1, bestLen=0;
+  materials.forEach((m,i)=>{
+    const ms = normSpecR(m.spec);
+    if(ms && n.includes(ms) && ms.length>bestLen){ best=i; bestLen=ms.length; }
+  });
+  return best;
+}
+function guessYGroupFromText(text){
+  return /TP3\d\d|304|316|321|347|309|310|317|STAINLESS|\bSS\b/i.test(text||'') ? 'austenitic' : 'ferritic';
+}
+
+/* ---------- anchor-based parser (profile: class-sheet calc doc) ---------- */
+function parseCalcSheet(aoa, sheetName){
+  const maxScan = Math.min(aoa.length, 400);
+  // Anchor 1: sub-header row containing an "NPS…" cell AND a "D(mm)" cell.
+  let hdr2 = -1;
+  for(let i=0;i<maxScan;i++){
+    const row = aoa[i]||[];
+    const hasNps = row.some(c=>/^NPS/i.test(txtR(c).trim()));
+    const hasD   = row.some(c=>/^D\s*\(\s*mm\s*\)/i.test(txtR(c).trim()));
+    if(hasNps && hasD){ hdr2=i; break; }
+  }
+  if(hdr2<0) return null;
+  const row2 = aoa[hdr2]||[], row1 = aoa[hdr2-1]||[];
+  const find2 = re => row2.findIndex(c=>re.test(txtR(c).trim()));
+  const col = {};
+  col.nps      = row2.findIndex(c=>/^NPS/i.test(txtR(c).trim()));
+  col.D        = find2(/^D\s*\(\s*mm\s*\)/i);
+  col.E        = row2.findIndex(c=>txtR(c).trim()==='E');
+  col.W        = row2.findIndex(c=>txtR(c).trim()==='W');
+  col.Y        = row2.findIndex(c=>txtR(c).trim()==='Y');
+  col.CA       = find2(/^C\.?\s*A/i);
+  col.material = row1.findIndex(c=>/MATERIAL/i.test(txtR(c)));
+  col.tmax     = find2(/^t\s*max/i);
+  col.tD6      = find2(/^t\s*<\s*D\s*\/\s*6/i);
+  col.tm       = row2.findIndex(c=>{ const s=txtR(c).trim(); return /^tm(\s|\(|=|$)/i.test(s) && !/max/i.test(s); });
+  col.avail    = row2.findIndex(c=>/^T\s*\(\s*mm\s*\)/.test(txtR(c).trim()));   // case-sensitive: uppercase T
+  col.selT     = row2.findIndex(c=>/^Ts\b/.test(txtR(c).trim()));
+  col.sch      = row2.findIndex(c=>/^Sch\b/i.test(txtR(c).trim()) && txtR(c).trim().length<=8);
+  // Case column triplets: S(unit) → P(unit) → t(mm)
+  col.cases = [];
+  for(let j=0;j<row2.length;j++){
+    const sM = txtR(row2[j]).trim().match(/^S\s*\(\s*(bar|MPa|psi|kPa)\s*\)/i);
+    if(!sM) continue;
+    let pCol=-1, tCol=-1, pUnit='bar';
+    for(let k=j+1;k<Math.min(j+4,row2.length);k++){
+      const s = txtR(row2[k]).trim();
+      const pM = s.match(/^P\s*\(\s*(bar|MPa|psi|kPa)\s*\)/i);
+      if(pCol<0 && pM){ pCol=k; pUnit=pM[1]; continue; }
+      if(pCol>=0 && /^t\s*\(\s*mm\s*\)/.test(s)){ tCol=k; break; }
+    }
+    if(pCol>=0 && tCol>=0) col.cases.push({sCol:j, pCol, tCol, sUnit:sM[1], pUnit});
+  }
+  if(!col.cases.length || col.nps<0 || col.D<0) return null;
+
+  // Anchor 2: design-case labels "T=…°C, P=…bar" in the rows above the header.
+  let caseDefs = [];
+  for(let i=Math.max(0,hdr2-8); i<hdr2; i++){
+    const defs=[];
+    (aoa[i]||[]).forEach(c=>{
+      const mm = txtR(c).match(/T\s*=\s*(?:to\s*)?(-?\d+(?:\.\d+)?)\s*°?\s*C\s*[,;]?\s*P\s*=\s*(-?\d+(?:\.\d+)?)\s*(bar|MPa|psi|kPa)?/i);
+      if(mm) defs.push({T:parseFloat(mm[1]), P:parseFloat(mm[2]), unit:mm[3]||'bar', label:txtR(c).trim()});
+    });
+    if(defs.length) caseDefs = defs;
+  }
+
+  // Anchor 3: class metadata block ("Line Class | Design Code | … | Corrosion Allowance | Design Temp | Design Pressure").
+  const meta = {};
+  for(let i=0;i<hdr2;i++){
+    const row = aoa[i]||[];
+    const iCls = row.findIndex(c=>/Line\s*Class/i.test(txtR(c)));
+    if(iCls<0) continue;
+    if(!row.some(c=>/Design\s*Code|Base\s*Material/i.test(txtR(c)))) continue;
+    let vi = i+1;
+    while(vi<hdr2 && !(aoa[vi]||[]).some(c=>txtR(c).trim())) vi++;
+    const vrow = aoa[vi]||[];
+    const grab = re => { const k = row.findIndex(c=>re.test(txtR(c))); return k>=0 ? txtR(vrow[k]).trim() : ''; };
+    meta.className   = grab(/Line\s*Class/i);
+    meta.designCode  = grab(/Design\s*Code/i);
+    meta.baseMaterial= grab(/Base\s*Material/i);
+    meta.flangeRating= grab(/Flange/i);
+    meta.ca          = grab(/Corrosion/i);
+    meta.designTemp  = grab(/Design\s*Temp/i);
+    meta.designPress = grab(/Design\s*Press/i);
+    break;
+  }
+
+  // Document metadata from the top rows (doc no, rev, title).
+  const docMeta = {docNo:'', rev:'', title:'', headLines:[]};
+  for(let i=0;i<Math.min(hdr2,10);i++){
+    (aoa[i]||[]).forEach(c=>{
+      const s = txtR(c).trim();
+      if(!s) return;
+      if(!docMeta.docNo && /^[A-Z0-9]{2,}(-[A-Z0-9]+){2,}$/i.test(s) && /\d/.test(s)) docMeta.docNo = s;
+      const rv = s.match(/REV\.?\s*:?\s*([A-Z0-9]+)/i);
+      if(!docMeta.rev && rv && /REV/i.test(s)) docMeta.rev = rv[1];
+      if(!docMeta.title && /WALL\s*THICKNESS/i.test(s)) docMeta.title = s;
+      if(s.length>8 && !/WALL\s*THICKNESS|REV|Page/i.test(s) && docMeta.headLines.length<3) docMeta.headLines.push(s);
+    });
+  }
+
+  // Data rows: any row (after the header) whose NPS cell parses and whose D is numeric.
+  const rows = [];
+  let gap = 0;
+  for(let i=hdr2+1;i<maxScan;i++){
+    const r = aoa[i]||[];
+    const npsRaw = txtR(r[col.nps]).trim().replace(/["']/g,'');
+    const Dv = parseFloat(r[col.D]);
+    if(!npsRaw || isNaN(Dv) || Dv<=0 || parseNpsToInches(npsRaw)===null){
+      if(rows.length && ++gap>3) break;
+      continue;
+    }
+    gap = 0;
+    rows.push({
+      npsRaw, npsIn: parseNpsToInches(npsRaw),
+      materialText: col.material>=0 ? txtR(r[col.material]).trim() : '',
+      D: Dv,
+      E: col.E>=0 ? parseFloat(r[col.E]) : NaN,
+      W: col.W>=0 ? parseFloat(r[col.W]) : NaN,
+      Y: col.Y>=0 ? parseFloat(r[col.Y]) : NaN,
+      CA: col.CA>=0 ? parseFloat(r[col.CA]) : NaN,
+      cases: col.cases.map(cc=>({ S:parseFloat(r[cc.sCol]), P:parseFloat(r[cc.pCol]), t:parseFloat(r[cc.tCol]), sUnit:cc.sUnit, pUnit:cc.pUnit })),
+      tmax: col.tmax>=0 ? parseFloat(r[col.tmax]) : null,
+      tm:   col.tm>=0   ? parseFloat(r[col.tm])   : null,
+      avail:col.avail>=0? parseFloat(r[col.avail]): null,
+      selT: col.selT>=0 ? parseFloat(r[col.selT]) : null,
+      sch:  col.sch>=0  ? txtR(r[col.sch]).trim() : ''
+    });
+  }
+  if(!rows.length) return null;
+  return {sheetName, className:meta.className||sheetName, meta, docMeta, caseDefs, rows};
+}
+
+function parseContractorWorkbook(wb, fileName){
+  const classes=[], skippedSheets=[];
+  for(const name of wb.SheetNames){
+    const ws = wb.Sheets[name];
+    if(!ws || !ws['!ref']){ skippedSheets.push(name); continue; }
+    const aoa = XLSX.utils.sheet_to_json(ws, {header:1, defval:null, raw:true});
+    const parsed = parseCalcSheet(aoa, name);
+    if(parsed) classes.push(parsed); else skippedSheets.push(name);
+  }
+  const docMeta = classes.length ? classes[0].docMeta : {docNo:'',rev:'',title:'',headLines:[]};
+  return {fileName, docMeta, classes, skippedSheets};
+}
+
+/* ---------- file load + material mapping UI ---------- */
+function onReviewFileChosen(event){
+  const file = event.target.files[0];
+  const status = document.getElementById('review-file-status');
+  reviewDoc=null; reviewResults=null; reviewComments=null;
+  document.getElementById('review-mapping').innerHTML='';
+  document.getElementById('review-results-card').style.display='none';
+  if(!file){ status.innerHTML='No file loaded.'; status.className='sub'; return; }
+  const reader = new FileReader();
+  reader.onload = e => {
+    try{
+      // sheetRows caps parsing — contractor calc sheets are short but often carry
+      // format-bloated ranges (a million styled rows); this keeps the import instant.
+      const wb = XLSX.read(new Uint8Array(e.target.result), {type:'array', sheetRows:400});
+      const model = parseContractorWorkbook(wb, file.name);
+      if(!model.classes.length){
+        status.innerHTML = '<span class="file-err">No sheet with a recognizable calc-sheet layout was found (this parser looks for an "NPS…" header row with a "D(mm)" column and "T=…,P=…bar" case labels). A different contractor format needs a parsing profile added to this tool.</span>';
+        return;
+      }
+      reviewDoc = model;
+      status.className='sub';
+      status.innerHTML = 'Loaded <b>'+escR(file.name)+'</b>'+(model.docMeta.docNo?' — doc '+escR(model.docMeta.docNo):'')+(model.docMeta.rev?' Rev. '+escR(model.docMeta.rev):'')+' — '+
+        model.classes.map(c=>'<b>'+escR(c.className)+'</b> ('+c.rows.length+' sizes × '+c.cases.length+' case'+(c.cases.length>1?'s':'')+')').join(', ') +
+        (model.skippedSheets.length? ' &nbsp;·&nbsp; skipped sheet(s): '+model.skippedSheets.map(escR).join(', ') : '');
+      renderReviewMapping();
+    }catch(err){
+      status.innerHTML = '<span class="file-err">Could not read file: '+escR(err.message)+'</span>';
+    }
+  };
+  reader.readAsArrayBuffer(file);
+}
+
+function renderReviewMapping(){
+  const box = document.getElementById('review-mapping');
+  const texts = [...new Set(reviewDoc.classes.flatMap(c=>c.rows.map(r=>r.materialText).filter(Boolean)))];
+  reviewMatMap = {};
+  const rowsHtml = texts.map(t=>{
+    const g = guessDbMaterial(t);
+    reviewMatMap[t] = {idx:g, yGroup:guessYGroupFromText(t)};
+    const opts = ['<option value="-1"'+(g<0?' selected':'')+'>— not mapped — add/select manually —</option>']
+      .concat(materials.map((m,i)=>'<option value="'+i+'"'+(i===g?' selected':'')+'>'+escR(m.spec)+'</option>')).join('');
+    const yopts = Object.keys(Y_TABLE).map(y=>'<option'+(y===reviewMatMap[t].yGroup?' selected':'')+'>'+y+'</option>').join('');
+    return '<tr><td style="font-family:var(--mono);font-size:12px;">'+escR(t)+'</td>'+
+      '<td><select data-mat="'+escR(t)+'" data-field="idx" onchange="reviewSetMap(this)">'+opts+'</select></td>'+
+      '<td><select data-mat="'+escR(t)+'" data-field="yGroup" onchange="reviewSetMap(this)">'+yopts+'</select></td></tr>';
+  }).join('');
+  box.innerHTML = texts.length ? (
+    '<h4 style="font-family:var(--cond);margin:14px 0 6px;">Material mapping — confirm before running</h4>'+
+    '<p class="hint" style="margin:0 0 8px;">Each material text found on the contractor sheets must map to a Material Database entry (allowable-stress source) and a Table 304.1.1 Y-group. Auto-guesses below are <b>suggestions — confirm them</b>; the S data used is this tool\'s, never the contractor\'s.</p>'+
+    '<table class="data"><tr><td style="font-weight:700;">Material text on contractor sheet</td><td style="font-weight:700;">Material Database entry (S source)</td><td style="font-weight:700;">Y group</td></tr>'+rowsHtml+'</table>'
+  ) : '<p class="hint">No material text column detected — every row will need the material mapped manually via the Material Database.</p>';
+}
+function reviewSetMap(sel){
+  const k = sel.getAttribute('data-mat');
+  if(!reviewMatMap[k]) return;
+  if(sel.getAttribute('data-field')==='idx') reviewMatMap[k].idx = parseInt(sel.value);
+  else reviewMatMap[k].yGroup = sel.value;
+}
+
+/* ---------- independent check engine (consumes canonical model only) ---------- */
+function runReviewCheck(){
+  const warn = document.getElementById('review-warning'); warn.innerHTML='';
+  if(!reviewDoc){ warn.innerHTML='<div class="danger"><div>⚠</div><div><b>No contractor workbook loaded.</b> Import the contractor calc .xlsx first.</div></div>'; return; }
+  const numTol  = parseFloat(document.getElementById('review-num-tol').value) || 1.0;
+  const millPct = parseFloat(document.getElementById('review-mill').value);
+  if(isNaN(millPct) || millPct>=100){ warn.innerHTML='<div class="danger"><div>⚠</div><div><b>Invalid mill undertolerance.</b></div></div>'; return; }
+
+  const out = [];
+  reviewDoc.classes.forEach(cls=>{
+    const rows = [];
+    cls.rows.forEach(row=>{
+      const rec = {npsRaw:row.npsRaw, row, findings:[], status:'OK', ourCases:[]};
+      const map = reviewMatMap[row.materialText] || {idx:-1, yGroup:'ferritic'};
+      if(map.idx<0 || !materials[map.idx]){
+        rec.status='ERROR';
+        rec.findings.push('Material "'+row.materialText+'" is not mapped to a Material Database entry — map it (or add it to the DB) and rerun.');
+        rows.push(rec); return;
+      }
+      const m = materials[map.idx];
+      rec.mSpec = m.spec; rec.sRef = m.ref||'';
+      const seriesKey = guessSeriesForMaterial(m.spec+' '+(m.desc||''));
+      let ourTmax=null, worstS=null, worstT=null, caseErr=null;
+
+      row.cases.forEach((c,k)=>{
+        const def = cls.caseDefs[k];
+        const T = def ? def.T : null;
+        const Pmpa = toMPa(!isNaN(c.P)&&c.P>0 ? c.P : (def?def.P:NaN), c.pUnit||'bar');
+        if(T===null || isNaN(Pmpa)){ rec.ourCases.push({error:'case T/P not identified'}); return; }
+        const Yv = yValueForGroup(map.yGroup, T);
+        const r = computeCore({m, P:Pmpa, OD:row.D, tempC:T, E:row.E, W:row.W, c:row.CA, mech:0, millPct, millUnit:'%', Y:Yv, YGroup:map.yGroup, eqChoice:'3a', d:NaN, seriesKey});
+        if(r.error){ rec.ourCases.push({error:r.message, T}); caseErr=r.message; return; }
+        rec.ourCases.push({T, Pbar:c.P, S:r.S, t:r.t});
+        if(ourTmax===null || r.t>ourTmax) ourTmax=r.t;
+        const theirS = toMPa(c.S, c.sUnit||'bar');
+        if(!isNaN(theirS) && theirS>0){
+          const d100=(theirS-r.S)/r.S*100;
+          if(worstS===null || Math.abs(d100)>Math.abs(worstS.d)) worstS={d:d100,k,theirS,ourS:r.S,T};
+        }
+        if(!isNaN(c.t) && c.t>0){
+          const d100=(c.t-r.t)/r.t*100;
+          if(worstT===null || Math.abs(d100)>Math.abs(worstT.d)) worstT={d:d100,k,theirT:c.t,ourT:r.t,T};
+        }
+      });
+
+      if(ourTmax===null){ rec.status='ERROR'; rec.findings.push(caseErr||'No design case could be computed.'); rows.push(rec); return; }
+      rec.ourTmax = ourTmax;
+      rec.ourTm   = ourTmax + (isNaN(row.CA)?0:row.CA);
+      rec.ourTmin = rec.ourTm/(1-millPct/100);
+      const rm = matchScheduleRow(row.D, seriesKey);
+      const sc = chooseLightestSchedule(rm, rec.ourTmin);
+      rec.ourSch = sc && sc.sch ? sc.sch : null;
+
+      if(caseErr) rec.findings.push('One or more cases could not be computed: '+caseErr);
+      if(worstS && Math.abs(worstS.d)>numTol)
+        rec.findings.push('Allowable stress deviation at T='+fmt(worstS.T)+'°C: sheet S='+fmt(worstS.theirS)+' MPa vs Table A-1 database S='+fmt(worstS.ourS)+' MPa ('+(worstS.d>0?'+':'')+worstS.d.toFixed(1)+'%) — state the S basis (code edition / table line).');
+      if(worstT && Math.abs(worstT.d)>numTol)
+        rec.findings.push('Pressure-design t deviation at T='+fmt(worstT.T)+'°C: sheet t='+fmt(worstT.theirT)+' mm vs independent t='+fmt(worstT.ourT)+' mm ('+(worstT.d>0?'+':'')+worstT.d.toFixed(1)+'%).');
+      if(row.tm!==null && !isNaN(row.tm)){
+        const dtm=(row.tm-rec.ourTm)/rec.ourTm*100;
+        if(Math.abs(dtm)>numTol) rec.findings.push('t_m deviation: sheet '+fmt(row.tm)+' mm vs independent '+fmt(rec.ourTm)+' mm ('+(dtm>0?'+':'')+dtm.toFixed(1)+'%).');
+      }
+      const weldTxtR = /DSAW|SAWL|SAWH|\bSAW\b|EFW|ERW|\bEW\b|WELD|WLD/i.test(row.materialText);
+      const rtStatedR = /100\s*%\s*(RT|X-?RAY|RADIOGRAPH)/i.test(row.materialText);
+      if(weldTxtR && row.E>=1 && !rtStatedR)
+        rec.findings.push('E='+fmt(row.E)+' claimed for welded pipe ("'+row.materialText+'") — E=1.00 requires 100% radiography per §302.3.4/Table A-1B and the RT extent is not stated on the sheet. Provide basis or revise E.');
+      const govT = cls.caseDefs.length ? Math.max(...cls.caseDefs.map(cd=>cd.T)) : 20;
+      const ourY = yValueForGroup(map.yGroup, govT);
+      if(!isNaN(row.Y) && Math.abs(row.Y-ourY)>0.001)
+        rec.findings.push('Y coefficient: sheet uses '+fmt(row.Y)+', Table 304.1.1 gives '+fmt(ourY)+' for '+map.yGroup+' at '+fmt(govT)+'°C.');
+      if(row.avail && row.selT){
+        const f = row.avail/row.selT;
+        if(Math.abs(f-(1-millPct/100))>0.005)
+          rec.findings.push('Available-thickness factor on sheet is '+(f*100).toFixed(1)+'% of nominal (implied undertolerance '+(100-f*100).toFixed(1)+'%), vs '+fmt(millPct)+'% used in this check — state the tolerance basis (ASTM −12.5% seamless vs API 5L/plate fixed-mm tolerance).');
+      }
+      if(ourTmax >= row.D/6)
+        rec.findings.push('t ≥ D/6 — outside the thin-wall validity of Eq. 3a; §304.1.2(b) special consideration required.');
+      if(rm && row.sch && row.selT!==null && !isNaN(row.selT)){
+        const key = Object.keys(rm.wt).find(k2=>k2.toLowerCase().split('/').map(s=>s.trim()).includes(row.sch.toLowerCase().trim()));
+        if(key && Math.abs(rm.wt[key]-row.selT)>0.05)
+          rec.findings.push('Selected thickness '+fmt(row.selT)+' mm does not match Sch '+row.sch+' nominal WT '+fmt(rm.wt[key])+' mm ('+DIM_STDS[seriesKey].label+') at OD '+fmt(row.D)+' mm.');
+        if(!key)
+          rec.findings.push('Schedule label "'+row.sch+'" not found in the '+DIM_STDS[seriesKey].label+' chart for OD '+fmt(row.D)+' mm — verify designation.');
+      }
+      if(row.selT!==null && !isNaN(row.selT) && row.selT>0){
+        rec.marginPct = (row.selT-rec.ourTmin)/rec.ourTmin*100;
+        if(row.selT < rec.ourTmin){
+          rec.status='FAIL';
+          rec.findings.push('NONCONFORMING: selected nominal thickness '+fmt(row.selT)+' mm is below independent t_min '+fmt(rec.ourTmin)+' mm (margin '+rec.marginPct.toFixed(1)+'%).');
+        }
+      } else {
+        rec.findings.push('No selected thickness stated for this size — confirm.');
+      }
+      if(rec.status!=='FAIL' && rec.findings.length) rec.status='WARN';
+      rows.push(rec);
+    });
+    out.push({cls, rows});
+  });
+
+  reviewResults = out;
+  const sys = REVIEW_CODE_SYSTEMS[document.getElementById('review-code-system').value];
+  reviewComments = out.map(c=>c.rows.map(r=>({
+    comment: r.status==='OK' ? '' : r.findings.join(' '),
+    code: r.status==='FAIL'||r.status==='ERROR' ? sys[2].code : (r.status==='WARN' ? sys[1].code : sys[0].code)
+  })));
+  renderReviewResults();
+}
+
+/* ---------- results UI with editable comments ---------- */
+function renderReviewResults(){
+  const all = reviewResults.flatMap(c=>c.rows);
+  const ok=all.filter(r=>r.status==='OK').length, wn=all.filter(r=>r.status==='WARN').length,
+        fl=all.filter(r=>r.status==='FAIL').length, er=all.filter(r=>r.status==='ERROR').length;
+  document.getElementById('review-summary').innerHTML =
+    '<span class="badge pass">'+ok+' OK</span> &nbsp;<span class="badge warn">'+wn+' WARN</span> &nbsp;<span class="badge fail">'+fl+' NONCONFORMING</span> &nbsp;<span class="badge fail">'+er+' ERROR</span> '+
+    '<span style="color:#8A97A0;font-family:var(--mono);font-size:12px;">&nbsp;of '+all.length+' size-rows in '+reviewResults.length+' class(es) — edit comments/codes below, then export the Comment Sheet</span>';
+  const sys = REVIEW_CODE_SYSTEMS[document.getElementById('review-code-system').value];
+  const badge = s => s==='OK' ? '<span class="badge pass">OK</span>' : s==='WARN' ? '<span class="badge warn">WARN</span>' : '<span class="badge fail">'+s+'</span>';
+
+  document.getElementById('review-classes').innerHTML = reviewResults.map((c,ci)=>{
+    const cm = c.cls.meta||{};
+    const head = '<div style="padding:10px 14px;background:var(--panel-alt);border-bottom:1px solid var(--line);">'+
+      '<span style="font-family:var(--cond);font-weight:700;font-size:15px;">Line Class '+escR(c.cls.className)+'</span>'+
+      '<span class="hint" style="margin-left:12px;">sheet "'+escR(c.cls.sheetName)+'" · '+escR(cm.designCode||'')+' · '+escR(cm.baseMaterial||'')+
+      (cm.ca?' · CA '+escR(cm.ca)+' mm':'')+(cm.designTemp?' · T '+escR(cm.designTemp)+'°C':'')+(cm.designPress?' · P '+escR(cm.designPress)+' bar':'')+
+      ' · cases: '+c.cls.caseDefs.map(d=>fmt(d.T)+'°C/'+fmt(d.P)+' '+d.unit).join(', ')+'</span></div>';
+    const body = c.rows.map((r,ri)=>{
+      const st = reviewComments[ci][ri];
+      const codeOpts = sys.map(s=>'<option value="'+s.code+'"'+(s.code===st.code?' selected':'')+'>'+s.code+' — '+s.label+'</option>').join('');
+      return '<tr>'+
+        '<td style="font-family:var(--mono);">'+escR(r.npsRaw)+'</td>'+
+        '<td style="font-size:11px;">'+escR(r.row.materialText||r.mSpec||'')+'</td>'+
+        '<td style="font-family:var(--mono);">'+fmt2(r.row.tm)+' / '+fmt2(r.row.selT)+' ('+escR(r.row.sch||'—')+')</td>'+
+        '<td style="font-family:var(--mono);">'+(r.ourTm!==undefined?fmt(r.ourTm):'—')+' / <b>'+(r.ourTmin!==undefined?fmt(r.ourTmin):'—')+'</b>'+(r.ourSch?' (Sch '+escR(r.ourSch)+')':'')+'</td>'+
+        '<td style="font-family:var(--mono);">'+(r.marginPct!==undefined?(r.marginPct>=0?'+':'')+r.marginPct.toFixed(1)+'%':'—')+'</td>'+
+        '<td>'+badge(r.status)+'</td>'+
+        '<td style="font-size:11px;max-width:260px;">'+(r.findings.length?r.findings.map(f=>'• '+escR(f)).join('<br>'):'<span style="color:#8A97A0;">no findings</span>')+'</td>'+
+        '<td><select style="max-width:170px;" onchange="reviewComments['+ci+']['+ri+'].code=this.value">'+codeOpts+'</select></td>'+
+        '<td><textarea rows="2" style="width:250px;font-size:11.5px;font-family:var(--sans);border:1px solid var(--line);border-radius:3px;padding:4px;" placeholder="Reviewer comment…" oninput="reviewComments['+ci+']['+ri+'].comment=this.value">'+escR(st.comment)+'</textarea></td></tr>';
+    }).join('');
+    return '<div style="border:1px solid var(--line);border-radius:6px;margin-bottom:18px;overflow:hidden;">'+head+
+      '<div style="overflow-x:auto;"><table class="sch"><tr><th>NPS</th><th>Material (sheet)</th><th>Contractor t_m / Ts (Sch)</th><th>Independent t_m / t_min</th><th>Margin</th><th>Status</th><th>Findings (auto)</th><th>Code</th><th>Comment (editable)</th></tr>'+body+'</table></div></div>';
+  }).join('');
+  document.getElementById('review-results-card').style.display='block';
+}
+
+/* ---------- exports ---------- */
+function reviewOverallCode(sys){
+  let worst = 0;
+  reviewComments.forEach(c=>c.forEach(st=>{
+    const i = sys.findIndex(s=>s.code===st.code);
+    if(i>worst) worst=i;
+  }));
+  return sys[worst].code+' — '+sys[worst].label;
+}
+function exportCommentSheet(){
+  if(!reviewResults){ alert('Run the independent check first.'); return; }
+  const sys = REVIEW_CODE_SYSTEMS[document.getElementById('review-code-system').value];
+  const items = [];
+  let n=1;
+  reviewResults.forEach((c,ci)=>c.rows.forEach((r,ri)=>{
+    const st = reviewComments[ci][ri];
+    if(!st.comment.trim() && st.code===sys[0].code) return;
+    items.push([n++, c.cls.className||c.cls.sheetName, r.npsRaw,
+      'Ts='+fmt2(r.row.selT)+' mm / Sch '+(r.row.sch||'—')+' / t_m='+fmt2(r.row.tm)+' mm',
+      r.ourTmin!==undefined ? 't_min='+fmt(r.ourTmin)+' mm / t_m='+fmt(r.ourTm)+' mm' : '—',
+      st.comment, st.code, '', '']);
+  }));
+  const aoa = [
+    ["DOCUMENT REVIEW COMMENT SHEET"],
+    [],
+    ["Reviewed Document", reviewDoc.docMeta.docNo || reviewDoc.fileName],
+    ["Document Title", reviewDoc.docMeta.title || 'Pipe Wall Thickness Calculation'],
+    ["Contractor Revision", reviewDoc.docMeta.rev || ''],
+    ["Project", document.getElementById('tb-project').value],
+    ["Reviewed By", document.getElementById('tb-by').value],
+    ["Review Date", document.getElementById('tb-date').value || new Date().toISOString().slice(0,10)],
+    ["Overall Review Code", reviewOverallCode(sys)],
+    [],
+    ["Review Codes", sys.map(s=>s.code+' = '+s.label).join('   |   ')],
+    [],
+    ["No.","Sheet / Line Class","Size (NPS)","Contractor Value","Independent Check","Comment","Code","Contractor Reply","Status After Reply"],
+    ...items,
+    [],
+    ["Note","Independent values were computed per ASME B31.3-2024 Eq. 3a (§304.1.2a) from this tool's transcribed Table A-1 data. Verify all flagged items against the licensed code edition and project specifications before formal issue."]
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  ws['!cols'] = [{wch:5},{wch:16},{wch:10},{wch:34},{wch:30},{wch:80},{wch:6},{wch:30},{wch:18}];
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Comment Sheet");
+  XLSX.writeFile(wb, 'COMMENT_SHEET_'+(reviewDoc.docMeta.docNo||'contractor_calc').replace(/[^A-Za-z0-9_-]/g,'_')+'.xlsx');
+}
+function exportReviewRegister(){
+  if(!reviewResults){ alert('Run the independent check first.'); return; }
+  const header = ["Line Class","Sheet","NPS","Material (sheet)","Mapped DB Material","OD (mm)","E","W","Y","CA (mm)",
+    "Contractor t_max (mm)","Contractor t_m (mm)","Contractor Ts (mm)","Contractor Sch",
+    "Independent t_max (mm)","Independent t_m (mm)","Independent t_min (mm)","Independent Sch","Margin vs t_min (%)",
+    "Status","Findings","Reviewer Comment","Code"];
+  const rows = [];
+  reviewResults.forEach((c,ci)=>c.rows.forEach((r,ri)=>{
+    const st = reviewComments[ci][ri];
+    rows.push([c.cls.className, c.cls.sheetName, r.npsRaw, r.row.materialText, r.mSpec||'', fmt(r.row.D),
+      fmt2(r.row.E), fmt2(r.row.W), fmt2(r.row.Y), fmt2(r.row.CA),
+      fmt2(r.row.tmax), fmt2(r.row.tm), fmt2(r.row.selT), r.row.sch||'',
+      r.ourTmax!==undefined&&r.ourTmax!==null?fmt(r.ourTmax):'', r.ourTm!==undefined?fmt(r.ourTm):'', r.ourTmin!==undefined?fmt(r.ourTmin):'', r.ourSch||'',
+      r.marginPct!==undefined?r.marginPct.toFixed(1):'',
+      r.status, r.findings.join(' | '), st.comment, st.code]);
+  }));
+  const aoa = [
+    ["Independent Comparison Register — contractor calc vs ASME B31.3-2024 Eq. 3a"],
+    ["Reviewed Document", reviewDoc.docMeta.docNo||reviewDoc.fileName, "Rev.", reviewDoc.docMeta.rev||''],
+    [],
+    header, ...rows
+  ];
+  const ws = XLSX.utils.aoa_to_sheet(aoa);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "Comparison Register");
+  XLSX.writeFile(wb, 'REVIEW_REGISTER_'+(reviewDoc.docMeta.docNo||'contractor_calc').replace(/[^A-Za-z0-9_-]/g,'_')+'.xlsx');
 }
 
 /* ================================================================

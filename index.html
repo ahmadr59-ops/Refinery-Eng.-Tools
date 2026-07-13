@@ -94,10 +94,10 @@ main{padding:34px 42px 90px;max-width:1440px;margin:0 auto;}
 .tb-grid{display:grid;grid-template-columns:repeat(4,1fr);}
 .tb-cell{padding:12px 18px;border-right:1px solid var(--line-soft);border-top:1px solid var(--line-soft);}
 .tb-cell:nth-child(4n){border-right:none;}
-.tb-cell label{display:block;font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;color:#5C6B74;text-transform:uppercase;margin-bottom:6px;}
+.tb-cell label{display:block;font-family:var(--mono);font-size:10.5px;font-weight:700;letter-spacing:.09em;color:#2E3A42;text-transform:uppercase;margin-bottom:6px;}
 .tb-cell input{width:100%;border:none;border-bottom:1px solid transparent;font-family:var(--sans);font-size:13.5px;padding:2px 0 4px;background:transparent;color:var(--ink);}
 .tb-cell input:focus{outline:none;border-bottom:1px solid var(--steel);}
-.tb-cell input::placeholder{color:#C3CACD;}
+.tb-cell input::placeholder{color:#9AA5AC;}
 
 section.card{background:var(--panel);border:1px solid var(--line);margin-bottom:26px;border-radius:var(--radius);box-shadow:var(--shadow-card);overflow:hidden;}
 section.card.attached{margin-top:0;border-top:none;border-radius:0 0 var(--radius) var(--radius);}
@@ -167,8 +167,6 @@ footer.legal{margin-top:8px;font-size:11.5px;color:#8A97A0;line-height:1.65;bord
 
 .scope-strip{display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-family:var(--mono);font-size:11px;color:#5C6B74;margin:0 0 18px;padding:7px 12px;background:var(--panel-alt);border:1px solid var(--line-soft);border-radius:4px;}
 .scope-strip .info-ic{white-space:nowrap;}
-body.view-inspector main > *:not(#panel-inspector):not(.modal-overlay){display:none !important;}
-body.view-inspector #panel-inspector{display:block !important;}
 .insp-block{margin-bottom:20px;}
 .insp-block h4{font-family:var(--cond);font-size:15px;margin:0 0 10px;border-bottom:2px solid var(--steel-wash);padding-bottom:6px;}
 table.insp{border-collapse:collapse;font-family:var(--mono);font-size:12px;}
@@ -272,8 +270,7 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
       <h1>Refinery Eng. Tools</h1>
     </div>
     <nav class="topbrand-nav">
-      <div class="nav-item active" id="nav-calc" style="cursor:pointer;" onclick="switchView('calc')"><span class="n">▣</span><span>Pipe Wall Thickness</span></div>
-      <div class="nav-item" id="nav-inspector" style="cursor:pointer;" onclick="switchView('inspector')"><span class="n">▤</span><span>Pipe Data Inspector</span></div>
+      <div class="nav-item active"><span class="n">▣</span><span>Pipe Wall Thickness</span></div>
       <div class="nav-item disabled"><span class="n">▢</span><span>Flange Rating Check</span></div>
       <div class="nav-item disabled"><span class="n">▢</span><span>Pipe Support Spacing</span></div>
       <div class="nav-item" style="cursor:pointer;background:rgba(62,124,110,.25);" onclick="runSelfTest()" title="Run the built-in validation suite (independently hand-calculated reference cases)"><span class="n" style="color:#7FCDB9;">✓</span><span>Self-test / Validation</span></div>
@@ -282,42 +279,10 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
   </header>
 
   <main>
-    <!-- PIPE DATA INSPECTOR (separate view) -->
-    <section class="card" id="panel-inspector" style="display:none;">
-      <div class="card-h"><h3><span class="idx">i.</span>Pipe Data Inspector — Material &amp; Dimensional Data</h3>
-        <div class="hint" style="margin:0;">Everything shown comes from the transcribed ASME B31.3-2024 Table A-1 and B36.10/19-2022 charts — nothing else is stored.</div>
-      </div>
-      <div class="card-body">
-        <div class="grid2">
-          <div class="field">
-            <label>Material <span class="req">*</span></label>
-            <select id="insp-material"></select>
-          </div>
-          <div class="field">
-            <label>Design Temperature (optional — for S interpolation)</label>
-            <div class="unit-row"><input id="insp-temp" type="number" placeholder="e.g. 350"><select id="insp-temp-unit"><option value="C">°C</option><option value="F">°F</option></select></div>
-          </div>
-          <div class="field">
-            <label>NPS (optional — for the dimensional table)</label>
-            <select id="insp-nps"></select>
-          </div>
-          <div class="field">
-            <label>Dimensional Standard</label>
-            <select id="insp-dim-std">
-              <option value="auto">Auto — from material</option>
-              <option value="cs">ASME B36.10-2022</option>
-              <option value="ss">ASME B36.19-2022</option>
-            </select>
-          </div>
-        </div>
-        <button class="calc-btn" onclick="runInspector()">Show material &amp; pipe data</button>
-        <div id="insp-report" style="margin-top:18px;"></div>
-      </div>
-    </section>
-
     <!-- MODE TABS -->
     <div class="mode-tabs">
       <button class="mode-tab active" id="tab-single" onclick="switchMode('single')">Single Line (manual)</button>
+      <button class="mode-tab" id="tab-info" onclick="switchMode('info')">Pipe Information</button>
       <button class="mode-tab" id="tab-batch" onclick="switchMode('batch')">Batch Import (Line List / PMS)</button>
     </div>
 
@@ -354,37 +319,28 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
         <div class="grid2">
           <div class="group-label">Required inputs</div>
           <div class="field">
-            <label>Pipe Size — Calculation Option <span class="req">*</span> <button type="button" class="info-ic" onclick="toggleNote('size-mode',event)">ⓘ</button></label>
+            <label>Calculation Option <span class="req">*</span> <button type="button" class="info-ic" onclick="toggleNote('size-mode',event)">ⓘ</button></label>
             <select id="in-size-mode" onchange="onSizeModeChange()">
-              <option value="nps">Using NPS — OD from chart, Eq. 3a</option>
-              <option value="od">Using Outer Diameter — Eq. 3a</option>
-              <option value="id">Using Inner Diameter d — Eq. 3b</option>
+              <option value="nps">Using NPS</option>
+              <option value="od">Using OD</option>
+              <option value="id">Using ID</option>
             </select>
-            <select id="in-nps" onchange="onNpsChange()" style="margin-top:8px;"></select>
+            <select id="in-eq-choice" style="display:none;"><option value="3a" selected>3a</option><option value="3b">3b</option></select>
+          </div>
+          <div class="field">
+            <label id="size-field-label">Pipe Size — NPS <span class="req">*</span></label>
+            <select id="in-nps" onchange="onNpsChange()"></select>
             <div class="unit-row" id="od-custom-row" style="margin-top:8px;display:none;"><input id="in-od" type="number" placeholder="OD, e.g. 168.28"><select id="in-od-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
             <div class="unit-row" id="in-d-row" style="margin-top:8px;display:none;">
               <input id="in-d" type="number" placeholder="d (max. per purchase spec), e.g. 154.1">
               <select id="in-d-unit"><option value="mm">mm</option><option value="in">in</option></select>
             </div>
             <div class="sub" id="size-mode-echo"></div>
-            <select id="in-eq-choice" style="display:none;"><option value="3a" selected>3a</option><option value="3b">3b</option></select>
           </div>
           <div class="field">
             <label>Material <span class="req">*</span> <button type="button" class="info-ic" onclick="toggleMaterialInfo(event)">ⓘ</button></label>
             <select id="in-material" onchange="onMaterialChange()"></select>
             <div class="sub" id="material-s-echo" style="display:none;"></div>
-          </div>
-          <div class="field">
-            <label>Design Pressure (internal) <span class="req">*</span></label>
-            <div class="unit-row"><input id="in-press" type="number" placeholder="e.g. 4.2"><select id="in-press-unit"><option value="MPa">MPa</option><option value="bar">bar</option><option value="psi">psi</option><option value="kPa">kPa</option></select></div>
-          </div>
-          <div class="field">
-            <label>Design Temperature <span class="req">*</span></label>
-            <div class="unit-row"><input id="in-temp" type="number" placeholder="e.g. 350" oninput="onMaterialChange();onWGroupChange();onYGroupChange();"><select id="in-temp-unit" onchange="onMaterialChange();onWGroupChange();onYGroupChange();"><option value="C">°C</option><option value="F">°F</option></select></div>
-          </div>
-          <div class="field">
-            <label>Corrosion / Erosion Allowance, c <span class="req">*</span> <button type="button" class="info-ic" onclick="toggleNote('corrosion',event)">ⓘ</button></label>
-            <div class="unit-row"><input id="in-corr" type="number" value="3.0"><select id="in-corr-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
           </div>
           <div class="field">
             <label>Y Coefficient — Material Group (Table 304.1.1-1) <span class="req">*</span> <button type="button" class="info-ic" onclick="toggleNote('y-coeff',event)">ⓘ</button></label>
@@ -398,6 +354,18 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
             </select>
             <div class="unit-row" style="margin-top:6px;"><input id="in-y" type="number" step="0.01" value="0.4" readonly><button type="button" class="lock-btn" id="lock-y" onclick="toggleLock('y')" title="Auto-filled from Table 304.1.1-1 — click to unlock for a manual override (recorded on the calc sheet)">🔒</button></div>
             <div id="y-group-warning" style="font-size:11.5px;color:var(--amber-dk);margin-top:6px;line-height:1.5;font-weight:600;"></div>
+          </div>
+          <div class="field">
+            <label>Design Pressure (internal) <span class="req">*</span></label>
+            <div class="unit-row"><input id="in-press" type="number" placeholder="e.g. 4.2"><select id="in-press-unit"><option value="MPa">MPa</option><option value="bar">bar</option><option value="psi">psi</option><option value="kPa">kPa</option></select></div>
+          </div>
+          <div class="field">
+            <label>Design Temperature <span class="req">*</span></label>
+            <div class="unit-row"><input id="in-temp" type="number" placeholder="e.g. 350" oninput="onMaterialChange();onWGroupChange();onYGroupChange();"><select id="in-temp-unit" onchange="onMaterialChange();onWGroupChange();onYGroupChange();"><option value="C">°C</option><option value="F">°F</option></select></div>
+          </div>
+          <div class="field">
+            <label>Corrosion / Erosion Allowance, c <span class="req">*</span> <button type="button" class="info-ic" onclick="toggleNote('corrosion',event)">ⓘ</button></label>
+            <div class="unit-row"><input id="in-corr" type="number" value="3.0"><select id="in-corr-unit"><option value="mm">mm</option><option value="in">in</option></select></div>
           </div>
 
           <div class="group-label">Code factors &amp; tolerances (defaults — adjust if needed)</div>
@@ -582,6 +550,39 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
         <div id="batch-warning"></div>
       </div>
     </section>
+    <!-- PIPE INFORMATION -->
+    <section class="card" id="panel-inspector" style="display:none;">
+      <div class="card-h"><h3><span class="idx">A.</span>Pipe Information — Material &amp; Dimensional Data</h3>
+        <div class="hint" style="margin:0;">Everything shown comes from the transcribed ASME B31.3-2024 Table A-1 and B36.10/19-2022 charts — nothing else is stored.</div>
+      </div>
+      <div class="card-body">
+        <div class="grid2">
+          <div class="field">
+            <label>Material <span class="req">*</span></label>
+            <select id="insp-material"></select>
+          </div>
+          <div class="field">
+            <label>Design Temperature (optional — for S interpolation)</label>
+            <div class="unit-row"><input id="insp-temp" type="number" placeholder="e.g. 350"><select id="insp-temp-unit"><option value="C">°C</option><option value="F">°F</option></select></div>
+          </div>
+          <div class="field">
+            <label>NPS (optional — for the dimensional table)</label>
+            <select id="insp-nps"></select>
+          </div>
+          <div class="field">
+            <label>Dimensional Standard</label>
+            <select id="insp-dim-std">
+              <option value="auto">Auto — from material</option>
+              <option value="cs">ASME B36.10-2022</option>
+              <option value="ss">ASME B36.19-2022</option>
+            </select>
+          </div>
+        </div>
+        <button class="calc-btn" onclick="runInspector()">Show material &amp; pipe data</button>
+        <div id="insp-report" style="margin-top:18px;"></div>
+      </div>
+    </section>
+
     </div>
 
     <div class="workspace-side">
@@ -594,7 +595,8 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
         </div>
       </div>
       <div class="result-hero">
-        <div class="metric hero"><div class="lab">Final result — Min. specified wall thickness, t<sub>min</sub></div><div class="val" id="res-tmin">—<span class="u">mm</span></div></div>
+        <div class="metric hero"><div class="lab">Final result — Min. specified wall thickness, t<sub>min</sub></div><div class="val" id="res-tmin">—<span class="u">mm</span></div>
+        <div id="res-schedule" style="margin-top:8px;font-family:var(--mono);font-size:13px;color:#DDE3E7;"></div></div>
         <div class="metric" style="flex:0 0 auto;"><div class="lab">Status</div><div style="margin-top:6px;" id="res-badge"><span class="badge muted">awaiting calculation</span></div></div>
         <div class="metric" style="border-bottom:none;padding-bottom:0;">
           <div class="lab">Derivation (t → + allowances → + mill tolerance = t<sub>min</sub>)</div>
@@ -707,7 +709,7 @@ const fmt = n => (Math.round(n*1000)/1000).toString();
 // Short reference notes are hidden by default and only shown when the user clicks the ⓘ icon
 // next to the relevant field — keeps the form uncluttered while still surfacing the detail on demand.
 const NOTES = {
-  'size-mode': '<b>Calculation Option.</b> <b>Using NPS</b> — pick a standard size; OD fills from the active dimensional chart (B36.10/19-2022) and eq. (3a), t = PD/[2(SEW+PY)], is used. <b>Using Outer Diameter</b> — type a (possibly non-standard) OD directly; eq. (3a). <b>Using Inner Diameter d</b> — eq. (3b), t = P(d+2c)/[2(SEW−P(1−Y))]; per §304.1.1(b), d is the <b>maximum</b> inside diameter allowable under the purchase specification, not a schedule nominal ID. In this mode NPS/OD is still required, because the §304.1.2(a) validity limit t &lt; D/6 and the schedule suggestion are both defined on D. Both equations are equally permitted by §304.1.2(a) and feed the same t_m = t + c + mech.',
+  'size-mode': '<b>Calculation Option.</b> <b>Using NPS</b> — pick a standard size; OD fills from the active chart (B36.10/19-2022) and the outside-diameter equation, eq. (3a) t = PD/[2(SEW+PY)], is applied. <b>Using OD</b> — type the outer diameter directly (standard or not); eq. (3a). <b>Using ID</b> — the inside-diameter equation, eq. (3b) t = P(d+2c)/[2(SEW−P(1−Y))]; per §304.1.1(b), d is the <b>maximum</b> inside diameter allowable under the purchase specification, not a schedule nominal ID. In ID mode NPS/OD is still required, because the §304.1.2(a) validity limit t &lt; D/6 and the schedule suggestion are both defined on D. Both equations are equally permitted by §304.1.2(a); the equation actually used is always recorded in the results and exports.',
   'scope': '<b>Scope &amp; Limitations.</b> This tool covers <b>straight pipe under internal pressure per ASME B31.3-2024 §304.1.2 (Base Code only)</b>. Outside its scope — evaluate separately: pipe bends after bending (§304.2.1, intrados thickness usually governs), external pressure (§304.1.3), branch reinforcement (§304.3), closures &amp; blanks (§304.4/304.5), High Pressure Piping (Chapter IX), Category M fluid service, severe cyclic conditions, and nonmetallic piping. Minimum-temperature / impact-test rules (§323.2.2) are only flagged, not evaluated. Schedule charts: ASME B36.10-2022 (NPS 1/8–48) and ASME B36.19-2022 (NPS 1/8–30), transcribed from the user-supplied official editions.',
   'nps-od': 'Selecting an NPS fills the OD from the active dimensional standard automatically — ASME B36.10-2022 (carbon/alloy, NPS 1/8–48) or ASME B36.19-2022 (stainless series 5S/10S/40S/80S/160S, NPS 1/8–30), chosen automatically from the material (override in the Dimensional Standard field). mm values are the 2022 editions\' own printed conversions. Choose the blank / Custom OD option for non-standard or HOLD sizes, or for B36.10 NPS 52–80 (no schedule designations in the standard).',
   'corrosion': 'Engineering judgment input — corrosivity of service, expected life. Not from a standard table.',
@@ -1365,19 +1367,23 @@ function onSizeModeChange(){
   const dRow = document.getElementById('in-d-row');
   const eqSel = document.getElementById('in-eq-choice');
   const echo = document.getElementById('size-mode-echo');
+  const lab = document.getElementById('size-field-label');
   eqSel.value = mode==='id' ? '3b' : '3a';
   if(mode==='nps'){
+    lab.innerHTML = 'Pipe Size — NPS <span class="req">*</span>';
     npsSel.style.display=''; dRow.style.display='none';
-    if(npsSel.value===''){ odRow.style.display='flex'; } else { odRow.style.display='none'; }
+    odRow.style.display = npsSel.value==='' ? 'flex' : 'none';
     echo.textContent='';
   } else if(mode==='od'){
+    lab.innerHTML = 'Pipe Size — Outer Diameter, D <span class="req">*</span>';
     npsSel.style.display='none'; dRow.style.display='none';
     npsSel.value=''; odRow.style.display='flex';
     const odInput=document.getElementById('in-od'); odInput.readOnly=false; document.getElementById('in-od-unit').disabled=false;
-    echo.textContent='Eq. 3a with the OD you enter. Schedule suggestion only if the OD matches a standard size.';
-  } else { // id → Eq. 3b
+    echo.textContent='Enter the pipe outer diameter directly (standard or non-standard).';
+  } else { // id
+    lab.innerHTML = 'Pipe Size — Inner Diameter, d <span class="req">*</span>';
     npsSel.style.display=''; dRow.style.display='flex';
-    echo.textContent='Eq. 3b uses d directly — but NPS or OD is still required: the t < D/6 validity check (§304.1.2(a)) and the schedule suggestion both need D.';
+    echo.textContent='d = max. inside diameter per purchase spec. NPS or OD below is still required — the t < D/6 validity check and the schedule suggestion are defined on D.';
     if(npsSel.value===''){ odRow.style.display='flex'; }
   }
 }
@@ -1724,6 +1730,7 @@ function resetResultsMetrics(){
   document.getElementById('res-tmin').innerHTML = '—<span class="u">mm</span>';
   document.getElementById('res-badge').innerHTML = '<span class="badge muted">awaiting calculation</span>';
   document.getElementById('sch-panel').style.display='none';
+  const schEl = document.getElementById('res-schedule'); if(schEl) schEl.innerHTML='';
 }
 function runCalc(){
   const warnBox = document.getElementById('calc-warning');
@@ -1765,6 +1772,14 @@ function runCalc(){
     : `<span class="badge pass">✓ Thin-wall OK (t &lt; D/6, table Y valid, §304.1.2(a))</span>`;
 
   renderSchedulePanel(OD, tmin, r.seriesKey);
+  const schEl = document.getElementById('res-schedule');
+  if(r.scheduleChoice && r.scheduleChoice.sch){
+    schEl.innerHTML = `→ <b style="color:var(--amber);">Sch ${r.scheduleChoice.sch}</b> — ${r.scheduleChoice.wt.toFixed(2)} mm nominal <span class="badge pass" style="margin-left:6px;">PASS +${r.scheduleChoice.marginPct.toFixed(1)}%</span> <span style="color:#8FA0AC;">(lightest adequate, ${DIM_STDS[r.seriesKey].label})</span>`;
+  } else if(r.rowMatch){
+    schEl.innerHTML = `<span class="badge fail">no schedule in the ${DIM_STDS[r.seriesKey].label} chart meets t_min</span>`;
+  } else {
+    schEl.innerHTML = `<span class="badge muted">non-standard OD — select wall manually vs t_min</span>`;
+  }
   if(r.minTempNote){ warnBox.innerHTML = `<div class="warn"><div>⚠</div><div><b>Low-temperature check.</b> ${r.minTempNote}</div></div>`; }
 
   const sLine = sLookup.belowFirst
@@ -1901,11 +1916,14 @@ function exportCalc(){
 
 function switchMode(mode){
   document.getElementById('tab-single').classList.toggle('active', mode==='single');
+  document.getElementById('tab-info').classList.toggle('active', mode==='info');
   document.getElementById('tab-batch').classList.toggle('active', mode==='batch');
   document.getElementById('panel-single').style.display = mode==='single' ? 'block' : 'none';
   document.getElementById('panel-batch').style.display = mode==='batch' ? 'block' : 'none';
-  document.getElementById('workspace').classList.toggle('mode-batch', mode==='batch');
+  document.getElementById('panel-inspector').style.display = mode==='info' ? 'block' : 'none';
+  document.getElementById('workspace').classList.toggle('mode-batch', mode!=='single');
   document.getElementById('batch-results-card').style.display='none';
+  if(mode==='info') renderInspectorSelects();
 }
 
 const LINE_LIST_HEADERS = ["Line No / Tag","NPS","Custom OD (mm)","Piping Class","Material Spec/Grade",
@@ -2371,13 +2389,6 @@ function exportBatchCalc(){
    PIPE DATA INSPECTOR — read-only report over the same material DB and
    dimension charts used by the calculator (no separate data source).
    ================================================================ */
-function switchView(v){
-  document.body.classList.toggle('view-inspector', v==='inspector');
-  document.getElementById('nav-calc').classList.toggle('active', v!=='inspector');
-  document.getElementById('nav-inspector').classList.toggle('active', v==='inspector');
-  if(v==='inspector'){ renderInspectorSelects(); }
-  closePopover();
-}
 function renderInspectorSelects(){
   const ms = document.getElementById('insp-material');
   if(ms && ms.options.length !== materials.length){
@@ -2449,16 +2460,26 @@ function runInspector(){
       const row = seriesData(key).find(p=>p.nps===npsSel);
       if(!row) return `<div class="hint">NPS ${npsSel} is not charted in ${DIM_STDS[key].label}.</div>`;
       const entries = Object.entries(row.wt).sort((a,b)=>a[1]-b[1]);
-      return `<table class="insp" style="margin-bottom:10px;">
-        <tr><th colspan="4">${DIM_STDS[key].longLabel} — NPS ${npsSel}, OD ${row.od} mm</th></tr>
-        <tr><th>Schedule</th><th>Nominal WT (mm)</th><th>Calc. ID = D − 2×WT (mm)</th><th></th></tr>
-        ${entries.map(([sch,wt])=>`<tr><td>Sch ${sch}</td><td>${wt.toFixed(2)}</td><td>${(row.od-2*wt).toFixed(2)}</td><td></td></tr>`).join('')}
-      </table>`;
+      const D = row.od;
+      const geo = (wt)=>{
+        const id = D-2*wt;
+        const kg = 0.0246615*(D-wt)*wt;                       // plain-end mass, B36.10-2022 §5 (carbon steel, 7850 kg/m3)
+        const Am = Math.PI/4*(D*D-id*id)/100;                 // metal area, cm²
+        const I  = Math.PI/64*(Math.pow(D,4)-Math.pow(id,4))/1e4; // moment of inertia, cm⁴
+        const Z  = (2*(I*1e4)/D)/1e3;                         // section modulus, cm³
+        const wtr= Math.PI/4*id*id/1000;                      // water content, kg/m
+        return {id,kg,Am,I,Z,wtr};
+      };
+      return `<div style="overflow-x:auto;"><table class="insp" style="margin-bottom:10px;">
+        <tr><th colspan="8">${DIM_STDS[key].longLabel} — NPS ${npsSel}, OD ${D} mm</th></tr>
+        <tr><th>Schedule</th><th>Nominal WT (mm)</th><th>Calc. ID (mm)</th><th>Mass (kg/m)</th><th>Metal area (cm²)</th><th>I (cm⁴)</th><th>Z (cm³)</th><th>Water (kg/m)</th></tr>
+        ${entries.map(([sch,wt])=>{const g=geo(wt);return `<tr><td>Sch ${sch}</td><td>${wt.toFixed(2)}</td><td>${g.id.toFixed(2)}</td><td>${g.kg.toFixed(2)}</td><td>${g.Am.toFixed(1)}</td><td>${g.I.toFixed(1)}</td><td>${g.Z.toFixed(1)}</td><td>${g.wtr.toFixed(1)}</td></tr>`;}).join('')}
+      </table></div>`;
     };
     html += `<div class="insp-block"><h4>Dimensional data — NPS ${npsSel}</h4>${mk(seriesKey)}`;
     const otherKey = seriesKey==='cs'?'ss':'cs';
     if(seriesData(otherKey).find(p=>p.nps===npsSel)) html += `<details style="margin-top:4px;"><summary style="cursor:pointer;font-size:12px;color:var(--steel-dk);">Also show ${DIM_STDS[otherKey].label}</summary>${mk(otherKey)}</details>`;
-    html += `<div class="hint" style="margin-top:6px;">Calculated ID is informational (D − 2×nominal WT) — it is NOT the eq. (3b) "d", which per §304.1.1(b) is the maximum ID allowable under the purchase specification.</div></div>`;
+    html += `<div class="hint" style="margin-top:6px;">Calc. ID is informational (D − 2×nominal WT) — NOT the eq. (3b) "d" (§304.1.1(b): max ID per purchase spec). Mass per meter uses the standard's own plain-end formula, B36.10-2022 §5: M = 0.0246615 (D − t) t, based on carbon steel (7850 kg/m³)${seriesKey==='ss'?' — for stainless, B36.19-2022 General Note (e): ferritic grades ≈ 5% lighter, austenitic ≈ 2% heavier':''}. Metal area / I / Z / water content are pure geometry (nominal dimensions, no tolerances).</div></div>`;
   }
   html += `<div class="hint">Not stored in this tool (do not infer from here): density, elastic modulus, chemistry, impact-test requirements — consult the material spec / ASME BPVC II-D.</div>`;
   document.getElementById('insp-report').innerHTML = html;

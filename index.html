@@ -81,10 +81,12 @@ button,input,select{font-family:inherit;transition:border-color .15s ease, backg
 main{padding:34px 42px 90px;max-width:1440px;margin:0 auto;}
 
 /* ---- workspace: inputs (main) + persistent results (side) — equal width, natural height ---- */
-.workspace{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:start;}
+.workspace{display:grid;grid-template-columns:1fr 1fr;gap:24px;align-items:stretch;}
 .workspace.mode-batch{grid-template-columns:1fr;}
 .workspace.mode-batch .workspace-side{display:none;}
-.workspace-side{position:sticky;top:20px;}
+.workspace-side{display:flex;flex-direction:column;}
+#results-card{flex:1;display:flex;flex-direction:column;}
+#results-card .result-hero{flex:1;}
 .titleblock{background:var(--panel);border:1px solid var(--line);border-top:3px solid var(--steel);border-bottom:none;margin-bottom:0;border-radius:2px 2px 0 0;box-shadow:var(--shadow-card);}
 .tb-head{display:flex;justify-content:space-between;align-items:center;padding:15px 20px;border-bottom:1px solid var(--line);}
 .tb-head h2{font-family:var(--cond);font-size:20px;margin:0;font-weight:700;}
@@ -169,7 +171,7 @@ footer.legal{margin-top:8px;font-size:11.5px;color:#8A97A0;line-height:1.65;bord
 /* ---- print: formal calc sheet (title block + results + breakdown) ---- */
 @media print{
   body{background:#fff;}
-  .topbrand,.mode-tabs,.workspace-main,#results-placeholder,.small-btn,.info-ic,.calc-btn,.warn.scope-banner{display:none !important;}
+  .topbrand,.mode-tabs,.workspace-main,.small-btn,.info-ic,.calc-btn,.warn.scope-banner{display:none !important;}
   .workspace{display:block;}
   .workspace-side{position:static;}
   section.card{box-shadow:none;border:1px solid #999;break-inside:avoid;}
@@ -195,7 +197,11 @@ footer.legal{margin-top:8px;font-size:11.5px;color:#8A97A0;line-height:1.65;bord
 .result-hero .metric .lab{font-family:var(--mono);font-size:10px;color:#8FA0AC;letter-spacing:.08em;text-transform:uppercase;}
 .result-hero .metric .val{font-family:var(--mono);font-size:24px;font-weight:600;color:var(--amber);margin-top:6px;}
 .result-hero .metric .val .u{font-size:13px;color:#DDE3E7;font-weight:400;margin-left:4px;}
-.result-hero .metric.hero .val{color:#fff;font-size:30px;}
+.result-hero .metric.hero .val{color:#fff;font-size:38px;font-weight:700;letter-spacing:.01em;}
+.result-hero .metric-row{display:flex;gap:32px;margin-top:8px;}
+.result-hero .submetric .lab{font-size:9.5px;}
+.result-hero .submetric .val{font-family:var(--mono);font-size:19px;font-weight:600;color:var(--amber);margin-top:5px;}
+.result-hero .submetric .val .u{font-size:12px;color:#DDE3E7;font-weight:400;margin-left:3px;}
 
 .badge{display:inline-flex;align-items:center;gap:6px;font-family:var(--mono);font-size:11.5px;font-weight:600;padding:5px 12px;border-radius:20px;letter-spacing:.02em;}
 .badge.pass{background:var(--teal-wash);color:var(--teal);border:1px solid rgba(62,124,110,.35);}
@@ -535,7 +541,7 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
 
     <div class="workspace-side">
     <!-- RESULTS -->
-    <section class="card" id="results-card" style="display:none;">
+    <section class="card" id="results-card">
       <div class="card-h"><h3><span class="idx">B.</span>Results</h3>
         <div style="display:flex;gap:8px;">
           <button class="small-btn" onclick="printCalcSheet()">🖨 Print / PDF</button>
@@ -543,10 +549,15 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
         </div>
       </div>
       <div class="result-hero">
-        <div class="metric"><div class="lab">Pressure design thickness, t</div><div class="val" id="res-t">—<span class="u">mm</span></div></div>
-        <div class="metric"><div class="lab">t + allowances, t<sub>m</sub></div><div class="val" id="res-tm">—<span class="u">mm</span></div></div>
-        <div class="metric hero"><div class="lab">Min. specified, t<sub>min</sub></div><div class="val" id="res-tmin">—<span class="u">mm</span></div></div>
-        <div class="metric" style="flex:0 0 auto;"><div class="lab">Status</div><div style="margin-top:6px;" id="res-badge"></div></div>
+        <div class="metric hero"><div class="lab">Final result — Min. specified wall thickness, t<sub>min</sub></div><div class="val" id="res-tmin">—<span class="u">mm</span></div></div>
+        <div class="metric" style="flex:0 0 auto;"><div class="lab">Status</div><div style="margin-top:6px;" id="res-badge"><span class="badge muted">awaiting calculation</span></div></div>
+        <div class="metric" style="border-bottom:none;padding-bottom:0;">
+          <div class="lab">Derivation (t → + allowances → + mill tolerance = t<sub>min</sub>)</div>
+          <div class="metric-row">
+            <div class="submetric"><div class="lab">1 · Pressure design t</div><div class="val" id="res-t">—<span class="u">mm</span></div></div>
+            <div class="submetric"><div class="lab">2 · t + c + mech, t<sub>m</sub></div><div class="val" id="res-tm">—<span class="u">mm</span></div></div>
+          </div>
+        </div>
       </div>
       <div class="sch-panel" id="sch-panel" style="display:none;">
         <h4>Nearest Standard Schedule — <span id="sch-std-label">ASME B36.10 / B36.19</span> <button type="button" class="info-ic" onclick="toggleNote('schedule-chart',event)">ⓘ</button></h4>
@@ -555,14 +566,6 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
       </div>
       <div style="padding:14px 22px;border-top:1px solid var(--line);">
         <button class="small-btn" onclick="openCalcModal()">🔍 View calculation breakdown</button>
-      </div>
-    </section>
-    <section class="card" id="results-placeholder">
-      <div class="card-h"><h3><span class="idx">B.</span>Results</h3></div>
-      <div class="card-body" style="display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:60px 24px;text-align:center;">
-        <div style="font-size:26px;opacity:.35;">📐</div>
-        <div style="font-family:var(--cond);font-weight:700;font-size:15px;color:#5C6B74;">Awaiting calculation</div>
-        <div class="hint" style="max-width:280px;margin:0;">Fill in the required inputs and press Calculate — results will appear right here, beside the form.</div>
       </div>
     </section>
     </div>
@@ -1619,6 +1622,13 @@ function computeCore({m, P, OD, tempC, E, W, c, mech, millPct, millUnit, Y, YGro
 }
 
 /* ---------------- Main calculation ---------------- */
+function resetResultsMetrics(){
+  document.getElementById('res-t').innerHTML = '—<span class="u">mm</span>';
+  document.getElementById('res-tm').innerHTML = '—<span class="u">mm</span>';
+  document.getElementById('res-tmin').innerHTML = '—<span class="u">mm</span>';
+  document.getElementById('res-badge').innerHTML = '<span class="badge muted">awaiting calculation</span>';
+  document.getElementById('sch-panel').style.display='none';
+}
 function runCalc(){
   const warnBox = document.getElementById('calc-warning');
   warnBox.innerHTML = '';
@@ -1645,8 +1655,7 @@ function runCalc(){
   if(r.error){
     const label = r.error==='no-material' ? 'Cannot calculate.' : r.error==='thick-wall' ? 'Thick-wall regime detected.' : 'Cannot calculate.';
     warnBox.innerHTML = `<div class="danger"><div>⚠</div><div><b>${label}</b> ${r.message}</div></div>`;
-    document.getElementById('results-card').style.display='none';
-    document.getElementById('results-placeholder').style.display='block';
+    resetResultsMetrics();
     return;
   }
 
@@ -1716,9 +1725,8 @@ function runCalc(){
   Thin-wall check (t < D/6, per §304.1.2a):  ${thinWallOK ? `Met — table Y and eq. ${eqUsed} apply directly.` : (thickWallYSwitch ? 'NOT met. Per §304.1.2(b), this design point requires special consideration (theory of failure, effects of fatigue, thermal stress) beyond a formula result. The t above uses the code\'s own extended Y=(d+2c)/(D+d+2c) as a data point ONLY — it is NOT by itself a demonstration of code compliance.' : 'CHECK — review manually')}
   P/SE = ${(P/(S*E)).toFixed(4)}  (must be ≤ 0.385 per §304.1.2(b) — ${ratioCheck? 'FAILED':'OK'})`;
 
-  document.getElementById('results-card').style.display = 'block';
+  document.getElementById('results-card').style.display = 'flex';
   document.getElementById('batch-results-card').style.display = 'none';
-  document.getElementById('results-placeholder').style.display = 'none';
   window._lastCalc = {m,S,P,OD,tempC,E,W,Y,YGroup,eqChoice:eqUsed,d:dInput,thickWallYSwitch,c,mech,millPct,millUnit:r.millUnit,t,tm,tmin};
 }
 
@@ -1794,9 +1802,7 @@ function switchMode(mode){
   document.getElementById('panel-single').style.display = mode==='single' ? 'block' : 'none';
   document.getElementById('panel-batch').style.display = mode==='batch' ? 'block' : 'none';
   document.getElementById('workspace').classList.toggle('mode-batch', mode==='batch');
-  document.getElementById('results-card').style.display='none';
   document.getElementById('batch-results-card').style.display='none';
-  document.getElementById('results-placeholder').style.display = mode==='single' ? 'block' : 'none';
 }
 
 const LINE_LIST_HEADERS = ["Line No / Tag","NPS","Custom OD (mm)","Piping Class","Material Spec/Grade",
@@ -2216,7 +2222,6 @@ function renderBatchResults(results){
   document.getElementById('batch-results-table').innerHTML =
     `<tr><th>Line No / Tag</th><th>Material</th><th>Size</th><th>P / T (design)</th><th>S (MPa)</th><th>E</th><th>t (mm)</th><th>t_m (mm)</th><th>t_min (mm)</th><th>Schedule (calc.)</th><th>Contractor WT (mm)</th><th>Margin</th><th>Deviation vs contractor</th><th>Status</th></tr>${rows}`;
 
-  document.getElementById('results-card').style.display='none';
   document.getElementById('batch-results-card').style.display='block';
 }
 

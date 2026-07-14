@@ -553,7 +553,7 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
     </section>
     <!-- CONTRACTOR DOC REVIEW PANEL -->
     <section class="card attached" id="panel-review" style="display:none;">
-      <div class="card-h"><h3><span class="idx">A.</span>Contractor Doc Review — Pipe Wall Thickness Calc Sheet</h3><span style="font-family:var(--mono);font-size:10.5px;color:#8A97A0;">review module v1.2 (2026-07-13)</span></div>
+      <div class="card-h"><h3><span class="idx">A.</span>Contractor Doc Review — Pipe Wall Thickness Calc Sheet</h3><span style="font-family:var(--mono);font-size:10.5px;color:#8A97A0;">review module v1.3 — project spec profiles (2026-07-14)</span></div>
       <div class="card-body">
         <p class="hint">Import a contractor-issued <b>Pipe Wall Thickness Calculation</b> workbook (one sheet per line class; sizes as rows; design T/P cases as column groups). Every size &times; case is recomputed <b>independently</b> per ASME B31.3-2024 Eq. 3a against this tool's own Table A-1 material database, and every deviation is flagged for comment. Parsing is <b>anchor-based</b> (header rows are found by text — "NPS…", "T=…,P=…" — not by fixed cell addresses), so moderate layout differences between contractors are tolerated.</p>
         <div class="grid2" style="margin-top:12px;">
@@ -578,6 +578,7 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
             <input id="review-mill" type="number" step="0.1" value="12.5">
           </div>
         </div>
+        <div id="review-profile-echo" class="hint" style="margin:4px 0 8px;"></div>
         <div id="review-mapping" style="margin:8px 0 14px;"></div>
         <button class="calc-btn" onclick="runReviewCheck()">Run independent check</button>
         <div id="review-warning"></div>
@@ -685,6 +686,18 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
         <p class="hint" style="margin:0;">Review, edit, or add the allowable stress (S) data, per-material temperature range, and source reference used by Sections A/B above for both Single Line and Batch modes. Changes here apply immediately.</p>
       </div>
     </section>
+    <!-- PROJECT SPEC PROFILE -->
+    <section class="card">
+      <div class="card-h"><h3><span class="idx">D.</span>Project Spec Profile</h3>
+        <div style="display:flex;gap:8px;">
+          <button class="small-btn" onclick="exportSpecProfile()">⬇ Export profile (.json)</button>
+          <button class="small-btn" onclick="document.getElementById('spec-json-input').click()">⬆ Import profile (.json)</button>
+          <input type="file" id="spec-json-input" accept=".json" style="display:none;" onchange="importSpecProfile(event)">
+        </div>
+      </div>
+      <div class="card-body" id="spec-profile-body"></div>
+    </section>
+
 
     <!-- CALCULATION BREAKDOWN MODAL -->
     <div class="modal-overlay" id="calc-modal">
@@ -2436,6 +2449,152 @@ function exportBatchCalc(){
 }
 
 /* ================================================================
+   PROJECT SPEC PROFILE — machine-checkable project spec rules:
+   minimum schedule/wall per size range (project practice, e.g.
+   small-bore Sch 80), wall-tolerance basis per material, review
+   settings. Saved per browser + versioned JSON export/import so a
+   profile travels with the project. Every rule carries a "Spec
+   reference" so auto-comments can cite the project spec clause.
+   ================================================================ */
+const SPEC_PROFILE_SCHEMA_VERSION = 1;
+function defaultSpecProfile(){
+  return {name:'(no project spec — code minimum only)', codeSystem:'abcd', numTol:1.0, defaultMill:12.5,
+    minSchRules:[], tolRules:[], notes:''};
+}
+function loadSpecProfiles(){
+  try{
+    const raw = localStorage.getItem('mtk_spec_profiles');
+    if(raw){ const p = JSON.parse(raw); if(p && Array.isArray(p.profiles) && p.profiles.length) return p; }
+  }catch(e){}
+  return {profiles:[defaultSpecProfile()], activeIdx:0};
+}
+let specState = loadSpecProfiles();
+function activeSpec(){ return specState.profiles[specState.activeIdx] || specState.profiles[0]; }
+function saveSpecProfiles(){ localStorage.setItem('mtk_spec_profiles', JSON.stringify(specState)); }
+
+function specMatchesMaterial(pattern, matText){
+  if(!pattern || !pattern.toString().trim()) return true;
+  return normSpecR(matText).includes(normSpecR(pattern));
+}
+function specTolRuleFor(matText){
+  return (activeSpec().tolRules||[]).find(r=>r.value!=='' && !isNaN(parseFloat(r.value)) && specMatchesMaterial(r.matPattern, matText)) || null;
+}
+// Highest applicable project minimum nominal WT for a size/material (from Min Sch label and/or Min WT mm).
+function specMinForRow(npsIn, matText, OD, seriesKey){
+  let floor=null, ref='', by='';
+  (activeSpec().minSchRules||[]).forEach(r=>{
+    const from=parseNpsToInches(r.sizeFrom), to=parseNpsToInches(r.sizeTo);
+    if(from===null || to===null || npsIn===null) return;
+    if(npsIn < from-1e-9 || npsIn > to+1e-9) return;
+    if(!specMatchesMaterial(r.matPattern, matText)) return;
+    let wt = parseFloat(r.minWT), lbl='';
+    if(r.minSch && r.minSch.toString().trim()){
+      const rm = matchScheduleRow(OD, seriesKey);
+      if(rm){
+        const key = Object.keys(rm.wt).find(k=>k.toLowerCase().split('/').map(s=>s.trim()).includes(r.minSch.toString().toLowerCase().trim()));
+        if(key && (isNaN(wt) || rm.wt[key]>wt)){ wt=rm.wt[key]; lbl='Sch '+r.minSch; }
+      }
+    }
+    if(!isNaN(wt) && wt>0 && (floor===null || wt>floor)){ floor=wt; ref=r.ref||''; by=lbl||(fmt(wt)+' mm'); }
+  });
+  return floor===null ? null : {floor, ref, by};
+}
+
+function specSetRule(list,i,field,val){ const sp=activeSpec(); if(!sp[list]||!sp[list][i]) return; sp[list][i][field]=val; saveSpecProfiles(); renderSpecProfileUI(); }
+function specDelRule(list,i){ const sp=activeSpec(); sp[list].splice(i,1); saveSpecProfiles(); renderSpecProfileUI(); }
+function specAddRule(list){
+  const sp=activeSpec(); if(!sp[list]) sp[list]=[];
+  sp[list].push(list==='minSchRules' ? {sizeFrom:'',sizeTo:'',matPattern:'',minSch:'',minWT:'',ref:''} : {matPattern:'',mode:'%',value:'',ref:''});
+  saveSpecProfiles(); renderSpecProfileUI();
+}
+function specSetField(f,v){ activeSpec()[f]=v; saveSpecProfiles(); renderSpecProfileUI(); }
+function specSelectProfile(i){ specState.activeIdx=i; saveSpecProfiles(); renderSpecProfileUI(); }
+function specAddProfile(){ const n=defaultSpecProfile(); n.name='New project profile'; specState.profiles.push(n); specState.activeIdx=specState.profiles.length-1; saveSpecProfiles(); renderSpecProfileUI(); }
+function specDupProfile(){ const c=JSON.parse(JSON.stringify(activeSpec())); c.name+=' (copy)'; specState.profiles.push(c); specState.activeIdx=specState.profiles.length-1; saveSpecProfiles(); renderSpecProfileUI(); }
+function specDelProfile(){
+  if(specState.profiles.length<=1){ alert('At least one profile must remain.'); return; }
+  if(!confirm('Delete profile "'+activeSpec().name+'"?')) return;
+  specState.profiles.splice(specState.activeIdx,1); specState.activeIdx=0; saveSpecProfiles(); renderSpecProfileUI();
+}
+function exportSpecProfile(){
+  const payload={schemaVersion:SPEC_PROFILE_SCHEMA_VERSION, exportedAt:new Date().toISOString(), profile:activeSpec()};
+  const blob=new Blob([JSON.stringify(payload,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='spec_profile_'+(activeSpec().name||'project').replace(/[^A-Za-z0-9_-]/g,'_')+'.json';
+  a.click();
+}
+function importSpecProfile(event){
+  const file=event.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const p=JSON.parse(e.target.result);
+      const prof=p.profile||p;
+      if(!prof || typeof prof!=='object' || !('name' in prof)){ alert('Not a valid spec profile JSON.'); return; }
+      if(p.schemaVersion && p.schemaVersion>SPEC_PROFILE_SCHEMA_VERSION && !confirm('Profile was exported with a newer schema ('+p.schemaVersion+') than this tool supports ('+SPEC_PROFILE_SCHEMA_VERSION+'). Import anyway?')) return;
+      specState.profiles.push(Object.assign(defaultSpecProfile(), prof));
+      specState.activeIdx=specState.profiles.length-1;
+      saveSpecProfiles(); renderSpecProfileUI();
+      alert('Imported profile "'+prof.name+'".');
+    }catch(err){ alert('Could not parse JSON: '+err.message); }
+  };
+  reader.readAsText(file);
+  event.target.value='';
+}
+
+function renderSpecProfileUI(){
+  const box = document.getElementById('spec-profile-body');
+  if(!box) return;
+  const sp = activeSpec();
+  const profOpts = specState.profiles.map((p,i)=>'<option value="'+i+'"'+(i===specState.activeIdx?' selected':'')+'>'+escR(p.name)+'</option>').join('');
+  const minRows = (sp.minSchRules||[]).map((r,i)=>
+    '<tr>'+
+    '<td><input style="width:70px;" value="'+escR(r.sizeFrom||'')+'" onchange="specSetRule(\'minSchRules\','+i+',\'sizeFrom\',this.value)"></td>'+
+    '<td><input style="width:70px;" value="'+escR(r.sizeTo||'')+'" onchange="specSetRule(\'minSchRules\','+i+',\'sizeTo\',this.value)"></td>'+
+    '<td><input value="'+escR(r.matPattern||'')+'" placeholder="(all materials)" onchange="specSetRule(\'minSchRules\','+i+',\'matPattern\',this.value)"></td>'+
+    '<td><input style="width:70px;" value="'+escR(r.minSch||'')+'" placeholder="e.g. 80" onchange="specSetRule(\'minSchRules\','+i+',\'minSch\',this.value)"></td>'+
+    '<td><input style="width:80px;" type="number" step="0.01" value="'+escR(r.minWT||'')+'" onchange="specSetRule(\'minSchRules\','+i+',\'minWT\',this.value)"></td>'+
+    '<td><input value="'+escR(r.ref||'')+'" placeholder="spec doc no. & clause" onchange="specSetRule(\'minSchRules\','+i+',\'ref\',this.value)"></td>'+
+    '<td><button class="del-btn" onclick="specDelRule(\'minSchRules\','+i+')">✕</button></td></tr>').join('');
+  const tolRows = (sp.tolRules||[]).map((r,i)=>
+    '<tr>'+
+    '<td><input value="'+escR(r.matPattern||'')+'" placeholder="e.g. API 5L" onchange="specSetRule(\'tolRules\','+i+',\'matPattern\',this.value)"></td>'+
+    '<td><select onchange="specSetRule(\'tolRules\','+i+',\'mode\',this.value)"><option value="%"'+(r.mode!=='mm'?' selected':'')+'>% of nominal</option><option value="mm"'+(r.mode==='mm'?' selected':'')+'>fixed mm</option></select></td>'+
+    '<td><input style="width:80px;" type="number" step="0.01" value="'+escR(r.value||'')+'" onchange="specSetRule(\'tolRules\','+i+',\'value\',this.value)"></td>'+
+    '<td><input value="'+escR(r.ref||'')+'" placeholder="spec doc no. & clause" onchange="specSetRule(\'tolRules\','+i+',\'ref\',this.value)"></td>'+
+    '<td><button class="del-btn" onclick="specDelRule(\'tolRules\','+i+')">✕</button></td></tr>').join('');
+  box.innerHTML =
+    '<p class="hint" style="margin:0 0 12px;">Machine-checkable requirements of the <b>project piping spec</b> — used by the calculation and review engines on top of the ASME B31.3 minimum. Only rules affecting wall thickness belong here (minimum schedule practice, tolerance basis); the spec text itself stays in the project documents. Each rule can cite its spec clause, and that citation is carried into auto-generated review comments.</p>'+
+    '<div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:12px;">'+
+      '<label style="font-family:var(--mono);font-size:11px;font-weight:700;">ACTIVE PROFILE</label>'+
+      '<select onchange="specSelectProfile(parseInt(this.value))" style="min-width:240px;">'+profOpts+'</select>'+
+      '<button class="small-btn" onclick="specAddProfile()">+ New</button>'+
+      '<button class="small-btn" onclick="specDupProfile()">Duplicate</button>'+
+      '<button class="small-btn" onclick="specDelProfile()">Delete</button>'+
+    '</div>'+
+    '<div class="grid2">'+
+      '<div class="field"><label>Profile / project name</label><input value="'+escR(sp.name)+'" onchange="specSetField(\'name\',this.value)"></div>'+
+      '<div class="field"><label>Review code system</label><select onchange="specSetField(\'codeSystem\',this.value)"><option value="abcd"'+(sp.codeSystem!=='1234'?' selected':'')+'>A / B / C / D</option><option value="1234"'+(sp.codeSystem==='1234'?' selected':'')+'>1 / 2 / 3 / 4</option></select></div>'+
+      '<div class="field"><label>Numeric match tolerance (%)</label><input type="number" step="0.1" value="'+sp.numTol+'" onchange="specSetField(\'numTol\',parseFloat(this.value))"></div>'+
+      '<div class="field"><label>Default mill undertolerance (%) — when no tolerance rule matches</label><input type="number" step="0.1" value="'+sp.defaultMill+'" onchange="specSetField(\'defaultMill\',parseFloat(this.value))"></div>'+
+    '</div>'+
+    '<h4 style="font-family:var(--cond);margin:16px 0 4px;">Minimum schedule / wall rules <span class="hint" style="font-weight:400;">(project practice — e.g. CS small bore ≤ 1½" → Sch 80)</span></h4>'+
+    '<table class="data"><tr><td style="font-weight:700;">Size from (NPS)</td><td style="font-weight:700;">Size to (NPS)</td><td style="font-weight:700;">Material contains</td><td style="font-weight:700;">Min Sch</td><td style="font-weight:700;">Min WT (mm)</td><td style="font-weight:700;">Spec reference</td><td></td></tr>'+minRows+'</table>'+
+    '<button class="small-btn" style="margin-top:6px;" onclick="specAddRule(\'minSchRules\')">+ Add rule</button>'+
+    '<h4 style="font-family:var(--cond);margin:18px 0 4px;">Wall-tolerance basis rules <span class="hint" style="font-weight:400;">(e.g. seamless ASTM → 12.5%, API 5L welded 5–15 mm → 10%, plate-made EFW → fixed mm per A20)</span></h4>'+
+    '<table class="data"><tr><td style="font-weight:700;">Material contains</td><td style="font-weight:700;">Basis</td><td style="font-weight:700;">Value</td><td style="font-weight:700;">Spec reference</td><td></td></tr>'+tolRows+'</table>'+
+    '<button class="small-btn" style="margin-top:6px;" onclick="specAddRule(\'tolRules\')">+ Add rule</button>'+
+    '<div class="field" style="margin-top:14px;"><label>Notes</label><textarea rows="2" style="width:100%;border:1px solid var(--line);border-radius:3px;padding:6px;font-family:var(--sans);font-size:12.5px;box-sizing:border-box;" onchange="specSetField(\'notes\',this.value)">'+escR(sp.notes||'')+'</textarea></div>';
+  const echo = document.getElementById('review-profile-echo');
+  if(echo) echo.innerHTML = 'Active project spec profile: <b>'+escR(sp.name)+'</b> — '+(sp.minSchRules||[]).length+' min-schedule rule(s), '+(sp.tolRules||[]).length+' tolerance rule(s). Configure in the <b>Project Spec Profile</b> card at the bottom of the page.';
+  const cs=document.getElementById('review-code-system'); if(cs) cs.value = sp.codeSystem||'abcd';
+  const nt=document.getElementById('review-num-tol');     if(nt) nt.value = sp.numTol!==undefined?sp.numTol:1.0;
+  const ml=document.getElementById('review-mill');        if(ml) ml.value = sp.defaultMill!==undefined?sp.defaultMill:12.5;
+}
+renderSpecProfileUI();
+
+/* ================================================================
    CONTRACTOR DOC REVIEW — anchor-based importer + independent check
    + reviewer comment workflow (EPC-style Comment Sheet export).
 
@@ -2688,6 +2847,11 @@ function runReviewCheck(){
       const m = materials[map.idx];
       rec.mSpec = m.spec; rec.sRef = m.ref||'';
       const seriesKey = guessSeriesForMaterial(m.spec+' '+(m.desc||''));
+      // Wall-tolerance basis: project-spec rule for this material wins over the global default.
+      const tolRule = specTolRuleFor(row.materialText);
+      const rowMillVal  = tolRule ? parseFloat(tolRule.value) : millPct;
+      const rowMillUnit = tolRule && tolRule.mode==='mm' ? 'mm' : '%';
+      rec.tolBasis = (rowMillUnit==='mm' ? '−'+fmt(rowMillVal)+' mm' : '−'+fmt(rowMillVal)+'%') + (tolRule && tolRule.ref ? ' ['+tolRule.ref+']' : '');
       let ourTmax=null, worstS=null, worstT=null, caseErr=null;
 
       row.cases.forEach((c,k)=>{
@@ -2696,7 +2860,7 @@ function runReviewCheck(){
         const Pmpa = toMPa(!isNaN(c.P)&&c.P>0 ? c.P : (def?def.P:NaN), c.pUnit||'bar');
         if(T===null || isNaN(Pmpa)){ rec.ourCases.push({error:'case T/P not identified'}); return; }
         const Yv = yValueForGroup(map.yGroup, T);
-        const r = computeCore({m, P:Pmpa, OD:row.D, tempC:T, E:row.E, W:row.W, c:row.CA, mech:0, millPct, millUnit:'%', Y:Yv, YGroup:map.yGroup, eqChoice:'3a', d:NaN, seriesKey});
+        const r = computeCore({m, P:Pmpa, OD:row.D, tempC:T, E:row.E, W:row.W, c:row.CA, mech:0, millPct:rowMillVal, millUnit:rowMillUnit, Y:Yv, YGroup:map.yGroup, eqChoice:'3a', d:NaN, seriesKey});
         if(r.error){ rec.ourCases.push({error:r.message, T}); caseErr=r.message; return; }
         rec.ourCases.push({T, Pbar:c.P, S:r.S, t:r.t});
         if(ourTmax===null || r.t>ourTmax) ourTmax=r.t;
@@ -2714,9 +2878,17 @@ function runReviewCheck(){
       if(ourTmax===null){ rec.status='ERROR'; rec.findings.push(caseErr||'No design case could be computed.'); rows.push(rec); return; }
       rec.ourTmax = ourTmax;
       rec.ourTm   = ourTmax + (isNaN(row.CA)?0:row.CA);
-      rec.ourTmin = rec.ourTm/(1-millPct/100);
+      rec.ourTmin = rowMillUnit==='mm' ? rec.ourTm + rowMillVal : rec.ourTm/(1-rowMillVal/100);
+      // Project-spec minimum (e.g. small-bore practice) and governing criterion
+      const fl = specMinForRow(row.npsIn, row.materialText, row.D, seriesKey);
+      rec.reqNominal = rec.ourTmin;
+      rec.governing  = ourTmax >= (isNaN(row.CA)?0:row.CA) ? 'Pressure' : 'Corrosion allowance';
+      if(fl && fl.floor > rec.reqNominal + 1e-9){
+        rec.reqNominal = fl.floor;
+        rec.governing  = 'Project spec — min '+fl.by+(fl.ref?' ['+fl.ref+']':'');
+      }
       const rm = matchScheduleRow(row.D, seriesKey);
-      const sc = chooseLightestSchedule(rm, rec.ourTmin);
+      const sc = chooseLightestSchedule(rm, rec.reqNominal);
       rec.ourSch = sc && sc.sch ? sc.sch : null;
 
       if(caseErr) rec.findings.push('One or more cases could not be computed: '+caseErr);
@@ -2737,9 +2909,11 @@ function runReviewCheck(){
       if(!isNaN(row.Y) && Math.abs(row.Y-ourY)>0.001)
         rec.findings.push('Y coefficient: sheet uses '+fmt(row.Y)+', Table 304.1.1 gives '+fmt(ourY)+' for '+map.yGroup+' at '+fmt(govT)+'°C.');
       if(row.avail && row.selT){
-        const f = row.avail/row.selT;
-        if(Math.abs(f-(1-millPct/100))>0.005)
-          rec.findings.push('Available-thickness factor on sheet is '+(f*100).toFixed(1)+'% of nominal (implied undertolerance '+(100-f*100).toFixed(1)+'%), vs '+fmt(millPct)+'% used in this check — state the tolerance basis (ASTM −12.5% seamless vs API 5L/plate fixed-mm tolerance).');
+        const expAvail = rowMillUnit==='mm' ? row.selT-rowMillVal : row.selT*(1-rowMillVal/100);
+        if(Math.abs(row.avail-expAvail)>0.05){
+          const f=row.avail/row.selT;
+          rec.findings.push('Available-thickness basis on sheet ('+fmt(row.avail)+' mm = '+(f*100).toFixed(1)+'% of nominal) differs from the review basis '+rec.tolBasis+' (expected '+fmt(expAvail)+' mm) — state the wall-tolerance basis (product spec & tolerance table) for this material/size range.');
+        }
       }
       if(ourTmax >= row.D/6)
         rec.findings.push('t ≥ D/6 — outside the thin-wall validity of Eq. 3a; §304.1.2(b) special consideration required.');
@@ -2751,10 +2925,12 @@ function runReviewCheck(){
           rec.findings.push('Schedule label "'+row.sch+'" not found in the '+DIM_STDS[seriesKey].label+' chart for OD '+fmt(row.D)+' mm — verify designation.');
       }
       if(row.selT!==null && !isNaN(row.selT) && row.selT>0){
-        rec.marginPct = (row.selT-rec.ourTmin)/rec.ourTmin*100;
+        rec.marginPct = (row.selT-rec.reqNominal)/rec.reqNominal*100;
         if(row.selT < rec.ourTmin){
           rec.status='FAIL';
-          rec.findings.push('NONCONFORMING: selected nominal thickness '+fmt(row.selT)+' mm is below independent t_min '+fmt(rec.ourTmin)+' mm (margin '+rec.marginPct.toFixed(1)+'%).');
+          rec.findings.push('NONCONFORMING: selected nominal thickness '+fmt(row.selT)+' mm is below independent code t_min '+fmt(rec.ourTmin)+' mm.');
+        } else if(row.selT < rec.reqNominal - 1e-9){
+          rec.findings.push('Selected nominal '+fmt(row.selT)+' mm meets code t_min ('+fmt(rec.ourTmin)+' mm) but is below the project-spec minimum '+fmt(rec.reqNominal)+' mm ('+rec.governing+').');
         }
       } else {
         rec.findings.push('No selected thickness stated for this size — confirm.');
@@ -2781,7 +2957,7 @@ function renderReviewResults(){
         fl=all.filter(r=>r.status==='FAIL').length, er=all.filter(r=>r.status==='ERROR').length;
   document.getElementById('review-summary').innerHTML =
     '<span class="badge pass">'+ok+' OK</span> &nbsp;<span class="badge warn">'+wn+' WARN</span> &nbsp;<span class="badge fail">'+fl+' NONCONFORMING</span> &nbsp;<span class="badge fail">'+er+' ERROR</span> '+
-    '<span style="color:#8A97A0;font-family:var(--mono);font-size:12px;">&nbsp;of '+all.length+' size-rows in '+reviewResults.length+' class(es) — edit comments/codes below, then export the Comment Sheet</span>';
+    '<span style="color:#8A97A0;font-family:var(--mono);font-size:12px;">&nbsp;of '+all.length+' size-rows in '+reviewResults.length+' class(es) — spec profile: '+escR(activeSpec().name)+' — edit comments/codes below, then export the Comment Sheet</span>';
   const sys = REVIEW_CODE_SYSTEMS[document.getElementById('review-code-system').value];
   const badge = s => s==='OK' ? '<span class="badge pass">OK</span>' : s==='WARN' ? '<span class="badge warn">WARN</span>' : '<span class="badge fail">'+s+'</span>';
 
@@ -2799,15 +2975,17 @@ function renderReviewResults(){
         '<td style="font-family:var(--mono);">'+escR(r.npsRaw)+'</td>'+
         '<td style="font-size:11px;">'+escR(r.row.materialText||r.mSpec||'')+'</td>'+
         '<td style="font-family:var(--mono);">'+fmt2(r.row.tm)+' / '+fmt2(r.row.selT)+' ('+escR(r.row.sch||'—')+')</td>'+
-        '<td style="font-family:var(--mono);">'+(r.ourTm!==undefined?fmt(r.ourTm):'—')+' / <b>'+(r.ourTmin!==undefined?fmt(r.ourTmin):'—')+'</b>'+(r.ourSch?' (Sch '+escR(r.ourSch)+')':'')+'</td>'+
+        '<td style="font-family:var(--mono);">'+(r.ourTm!==undefined?fmt(r.ourTm):'—')+' / '+(r.ourTmin!==undefined?fmt(r.ourTmin):'—')+'</td>'+
+        '<td style="font-family:var(--mono);"><b>'+(r.reqNominal!==undefined?fmt(r.reqNominal):'—')+'</b>'+(r.ourSch?' (Sch '+escR(r.ourSch)+')':'')+
+          (r.governing?'<div style="font-size:10px;color:#8A97A0;max-width:150px;">'+escR(r.governing)+'</div>':'')+'</td>'+
         '<td style="font-family:var(--mono);">'+(r.marginPct!==undefined?(r.marginPct>=0?'+':'')+r.marginPct.toFixed(1)+'%':'—')+'</td>'+
         '<td>'+badge(r.status)+'</td>'+
-        '<td style="font-size:11px;max-width:260px;">'+(r.findings.length?r.findings.map(f=>'• '+escR(f)).join('<br>'):'<span style="color:#8A97A0;">no findings</span>')+'</td>'+
+        '<td style="font-size:11px;max-width:250px;">'+(r.findings.length?r.findings.map(f=>'• '+escR(f)).join('<br>'):'<span style="color:#8A97A0;">no findings</span>')+'</td>'+
         '<td><select style="max-width:170px;" onchange="reviewComments['+ci+']['+ri+'].code=this.value">'+codeOpts+'</select></td>'+
         '<td><textarea rows="2" style="width:250px;font-size:11.5px;font-family:var(--sans);border:1px solid var(--line);border-radius:3px;padding:4px;" placeholder="Reviewer comment…" oninput="reviewComments['+ci+']['+ri+'].comment=this.value">'+escR(st.comment)+'</textarea></td></tr>';
     }).join('');
     return '<div style="border:1px solid var(--line);border-radius:6px;margin-bottom:18px;overflow:hidden;">'+head+
-      '<div style="overflow-x:auto;"><table class="sch"><tr><th>NPS</th><th>Material (sheet)</th><th>Contractor t_m / Ts (Sch)</th><th>Independent t_m / t_min</th><th>Margin</th><th>Status</th><th>Findings (auto)</th><th>Code</th><th>Comment (editable)</th></tr>'+body+'</table></div></div>';
+      '<div style="overflow-x:auto;"><table class="sch"><tr><th>NPS</th><th>Material (sheet)</th><th>Contractor t_m / Ts (Sch)</th><th>Independent t_m / t_min</th><th>Required nominal — governing</th><th>Margin</th><th>Status</th><th>Findings (auto)</th><th>Code</th><th>Comment (editable)</th></tr>'+body+'</table></div></div>';
   }).join('');
   document.getElementById('review-results-card').style.display='block';
 }
@@ -2842,6 +3020,7 @@ function exportCommentSheet(){
     ["Contractor Revision", reviewDoc.docMeta.rev || ''],
     ["Project", document.getElementById('tb-project').value],
     ["Reviewed By", document.getElementById('tb-by').value],
+    ["Project Spec Profile", activeSpec().name],
     ["Review Date", document.getElementById('tb-date').value || new Date().toISOString().slice(0,10)],
     ["Overall Review Code", reviewOverallCode(sys)],
     [],
@@ -2862,7 +3041,8 @@ function exportReviewRegister(){
   if(!reviewResults){ alert('Run the independent check first.'); return; }
   const header = ["Line Class","Sheet","NPS","Material (sheet)","Mapped DB Material","OD (mm)","E","W","Y","CA (mm)",
     "Contractor t_max (mm)","Contractor t_m (mm)","Contractor Ts (mm)","Contractor Sch",
-    "Independent t_max (mm)","Independent t_m (mm)","Independent t_min (mm)","Independent Sch","Margin vs t_min (%)",
+    "Independent t_max (mm)","Independent t_m (mm)","Independent t_min (mm)","Tolerance Basis",
+    "Required Nominal (mm)","Governing Criterion","Suggested Sch","Margin vs required (%)",
     "Status","Findings","Reviewer Comment","Code"];
   const rows = [];
   reviewResults.forEach((c,ci)=>c.rows.forEach((r,ri)=>{
@@ -2870,13 +3050,15 @@ function exportReviewRegister(){
     rows.push([c.cls.className, c.cls.sheetName, r.npsRaw, r.row.materialText, r.mSpec||'', fmt(r.row.D),
       fmt2(r.row.E), fmt2(r.row.W), fmt2(r.row.Y), fmt2(r.row.CA),
       fmt2(r.row.tmax), fmt2(r.row.tm), fmt2(r.row.selT), r.row.sch||'',
-      r.ourTmax!==undefined&&r.ourTmax!==null?fmt(r.ourTmax):'', r.ourTm!==undefined?fmt(r.ourTm):'', r.ourTmin!==undefined?fmt(r.ourTmin):'', r.ourSch||'',
+      r.ourTmax!==undefined&&r.ourTmax!==null?fmt(r.ourTmax):'', r.ourTm!==undefined?fmt(r.ourTm):'', r.ourTmin!==undefined?fmt(r.ourTmin):'', r.tolBasis||'',
+      r.reqNominal!==undefined?fmt(r.reqNominal):'', r.governing||'', r.ourSch||'',
       r.marginPct!==undefined?r.marginPct.toFixed(1):'',
       r.status, r.findings.join(' | '), st.comment, st.code]);
   }));
   const aoa = [
     ["Independent Comparison Register — contractor calc vs ASME B31.3-2024 Eq. 3a"],
     ["Reviewed Document", reviewDoc.docMeta.docNo||reviewDoc.fileName, "Rev.", reviewDoc.docMeta.rev||''],
+    ["Project Spec Profile", activeSpec().name],
     [],
     header, ...rows
   ];

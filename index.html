@@ -561,7 +561,7 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
     </section>
     <!-- CONTRACTOR DOC REVIEW PANEL -->
     <section class="card attached" id="panel-review" style="display:none;">
-      <div class="card-h"><h3><span class="idx">A.</span>Contractor Doc Review — Pipe Wall Thickness Calc Sheet</h3><span style="font-family:var(--mono);font-size:10.5px;color:#8A97A0;">review module v1.4 — tabbed UI (2026-07-14)</span></div>
+      <div class="card-h"><h3><span class="idx">A.</span>Contractor Doc Review — Pipe Wall Thickness Calc Sheet</h3><span style="font-family:var(--mono);font-size:10.5px;color:#8A97A0;">review module v1.5 — build profile from PMS (2026-07-14)</span></div>
       <div class="card-body">
         <p class="hint">Import a contractor-issued <b>Pipe Wall Thickness Calculation</b> workbook (one sheet per line class; sizes as rows; design T/P cases as column groups). Every size &times; case is recomputed <b>independently</b> per ASME B31.3-2024 Eq. 3a against this tool's own Table A-1 material database, and every deviation is flagged for comment. Parsing is <b>anchor-based</b> (header rows are found by text — "NPS…", "T=…,P=…" — not by fixed cell addresses), so moderate layout differences between contractors are tolerated.</p>
         <div class="grid2" style="margin-top:12px;">
@@ -662,6 +662,8 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
     <section class="card" id="panel-spec" style="display:none;">
       <div class="card-h"><h3><span class="idx">A.</span>Project Spec Profile — Machine-Checkable Project Requirements</h3>
         <div style="display:flex;gap:8px;">
+          <button class="small-btn" onclick="document.getElementById('spec-pms-input').click()">⛏ Build from PMS (.xlsx)</button>
+          <input type="file" id="spec-pms-input" accept=".xlsx,.xls,.xlsm" style="display:none;" onchange="buildProfileFromPms(event)">
           <button class="small-btn" onclick="exportSpecProfile()">⬇ Export profile (.json)</button>
           <button class="small-btn" onclick="document.getElementById('spec-json-input').click()">⬆ Import profile (.json)</button>
           <input type="file" id="spec-json-input" accept=".json" style="display:none;" onchange="importSpecProfile(event)">
@@ -2538,6 +2540,53 @@ function importSpecProfile(event){
     }catch(err){ alert('Could not parse JSON: '+err.message); }
   };
   reader.readAsText(file);
+  event.target.value='';
+}
+
+/* Build a new spec profile from a canonical PMS (.xlsx) file — the template from the Batch tab.
+   The PMS stays the single source of truth; the profile is derived from it (min-schedule rules
+   from "Schedule/Rating (ref.)", tolerance rules from the Mill Undertolerance columns). */
+function buildProfileFromPms(event){
+  const file=event.target.files[0]; if(!file) return;
+  const reader=new FileReader();
+  reader.onload=e=>{
+    try{
+      const wb=XLSX.read(new Uint8Array(e.target.result),{type:'array',sheetRows:1000});
+      const rows=findSheetRows(wb,'Piping Class');
+      if(!rows||!rows.length){ alert('No sheet with the canonical PMS header ("Piping Class" in row 1) was found — use the PMS template downloadable in the Batch tab.'); return; }
+      const prof=defaultSpecProfile();
+      prof.name='From PMS: '+file.name.replace(/\.(xlsx|xlsm|xls)$/i,'');
+      const skipped=[]; const tolSeen={};
+      rows.forEach((r,i)=>{
+        const cls=(r['Piping Class']||'').toString().trim();
+        const from=(r['Size From (NPS)']||'').toString().trim();
+        const to=(r['Size To (NPS)']||'').toString().trim();
+        const mat=(r['Material Spec/Grade']||'').toString().trim();
+        const schRef=(r['Schedule/Rating (ref.)']||'').toString().trim();
+        if(!from||!to){ if(cls||mat||schRef) skipped.push('row '+(i+2)+': missing size range'); return; }
+        const ref='PMS '+file.name+(cls?', class '+cls:'')+', size '+from+'-'+to;
+        let minSch='', minWT='', m;
+        if(m=schRef.match(/^SCH\.?\s*([0-9]+S?)\b/i)) minSch=m[1];
+        else if(m=schRef.match(/^(STD|XS|XXS)\b/i)) minSch=m[1].toUpperCase();
+        else if(m=schRef.match(/([0-9]+(?:\.[0-9]+)?)\s*MM/i)) minWT=m[1];
+        if(minSch||minWT) prof.minSchRules.push({sizeFrom:from,sizeTo:to,matPattern:mat,minSch:minSch,minWT:minWT,ref:ref+(schRef?' ('+schRef+')':'')});
+        else if(schRef) skipped.push('row '+(i+2)+': Schedule/Rating "'+schRef+'" not recognized (expected SCH nn / STD / XS / XXS / n.n MM)');
+        const mmTol=parseFloat(r['Mill Undertolerance (mm)']), pcTol=parseFloat(r['Mill Undertolerance (%)']);
+        const mode=!isNaN(mmTol)?'mm':(!isNaN(pcTol)?'%':null);
+        if(mode && mat){
+          const val=mode==='mm'?mmTol:pcTol;
+          const key=normSpecR(mat)+'|'+mode+'|'+val;
+          if(!tolSeen[key]){ tolSeen[key]=1; prof.tolRules.push({matPattern:mat,mode:mode,value:val.toString(),ref:'PMS '+file.name+' — mill undertolerance for '+mat}); }
+        }
+      });
+      prof.notes='Auto-generated from canonical PMS "'+file.name+'" on '+new Date().toISOString().slice(0,10)+'. Review every rule against the source PMS before use.'+(skipped.length?' Skipped: '+skipped.join('; ')+'.':'');
+      specState.profiles.push(prof);
+      specState.activeIdx=specState.profiles.length-1;
+      saveSpecProfiles(); renderSpecProfileUI();
+      alert('Profile "'+prof.name+'" created — '+prof.minSchRules.length+' min-schedule rule(s), '+prof.tolRules.length+' tolerance rule(s).'+(skipped.length?'\n\nSkipped:\n- '+skipped.join('\n- '):''));
+    }catch(err){ alert('Could not read PMS file: '+err.message); }
+  };
+  reader.readAsArrayBuffer(file);
   event.target.value='';
 }
 

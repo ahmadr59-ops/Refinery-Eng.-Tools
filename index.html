@@ -229,10 +229,16 @@ table.sch tr.selected td{background:var(--steel-wash);font-weight:600;}
 table.sch tr.selected td:first-child{border-left:3px solid var(--steel);}
 
 /* ---- mode segmented control ---- */
-.mode-tabs{display:inline-flex;gap:3px;background:var(--line-soft);padding:4px;border-radius:7px;margin-bottom:22px;}
-.mode-tab{font-family:var(--cond);font-weight:700;font-size:13px;padding:9px 20px;background:transparent;border:none;border-radius:5px;color:#5C6B74;cursor:pointer;letter-spacing:.01em;}
-.mode-tab.active{background:var(--panel);color:var(--steel-dk);box-shadow:var(--shadow-card);}
-.mode-tab:hover:not(.active){color:var(--ink);}
+.mode-tabs{display:flex;flex-wrap:wrap;gap:7px;margin-bottom:22px;}
+.mode-tab{position:relative;display:flex;align-items:center;gap:10px;font-family:var(--cond);font-weight:700;font-size:13.5px;padding:10px 18px 10px 14px;background:var(--panel);border:1px solid var(--line);border-bottom:3px solid var(--line);border-radius:7px 7px 0 0;color:#5C6B74;cursor:pointer;letter-spacing:.01em;box-shadow:var(--shadow-card);transition:transform .12s ease, background .15s ease, color .15s ease, border-color .15s ease;}
+.mode-tab .tab-ic{font-size:17px;line-height:1;filter:grayscale(1);opacity:.5;transition:filter .15s ease, opacity .15s ease;}
+.mode-tab .tab-t{display:flex;flex-direction:column;align-items:flex-start;gap:2px;line-height:1.1;}
+.mode-tab .tab-n{font-family:var(--mono);font-size:9px;font-weight:600;color:#9AA5AC;letter-spacing:.14em;}
+.mode-tab:hover:not(.active){transform:translateY(-2px);color:var(--ink);border-color:var(--line-strong);border-bottom-color:var(--steel);}
+.mode-tab:hover .tab-ic{filter:none;opacity:1;}
+.mode-tab.active{background:var(--ink);color:#fff;border-color:var(--ink);border-bottom:3px solid var(--amber);}
+.mode-tab.active .tab-ic{filter:none;opacity:1;}
+.mode-tab.active .tab-n{color:var(--amber);}
 
 table.sch tr.bstatus-ok td{color:var(--teal);}
 table.sch tr.bstatus-fail td{color:var(--rust);}
@@ -281,10 +287,12 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
   <main>
     <!-- MODE TABS -->
     <div class="mode-tabs">
-      <button class="mode-tab active" id="tab-single" onclick="switchMode('single')">Single Line (manual)</button>
-      <button class="mode-tab" id="tab-info" onclick="switchMode('info')">Pipe Information</button>
-      <button class="mode-tab" id="tab-batch" onclick="switchMode('batch')">Batch Import (Line List / PMS)</button>
-      <button class="mode-tab" id="tab-review" onclick="switchMode('review')">Contractor Doc Review</button>
+      <button class="mode-tab active" id="tab-single" onclick="switchMode('single')"><span class="tab-ic">📐</span><span class="tab-t"><span class="tab-n">01 · CALC</span>Single Line (manual)</span></button>
+      <button class="mode-tab" id="tab-info" onclick="switchMode('info')"><span class="tab-ic">📚</span><span class="tab-t"><span class="tab-n">02 · DATA</span>Pipe Information</span></button>
+      <button class="mode-tab" id="tab-batch" onclick="switchMode('batch')"><span class="tab-ic">🗂</span><span class="tab-t"><span class="tab-n">03 · BATCH</span>Batch Import (Line List / PMS)</span></button>
+      <button class="mode-tab" id="tab-review" onclick="switchMode('review')"><span class="tab-ic">🔎</span><span class="tab-t"><span class="tab-n">04 · REVIEW</span>Contractor Doc Review</span></button>
+      <button class="mode-tab" id="tab-matdb" onclick="switchMode('matdb')"><span class="tab-ic">⚙</span><span class="tab-t"><span class="tab-n">05 · LIBRARY</span>Material Database</span></button>
+      <button class="mode-tab" id="tab-spec" onclick="switchMode('spec')"><span class="tab-ic">📋</span><span class="tab-t"><span class="tab-n">06 · SPEC</span>Project Spec Profile</span></button>
     </div>
 
     <div id="selftest-banner" style="display:none;"></div>
@@ -553,7 +561,7 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
     </section>
     <!-- CONTRACTOR DOC REVIEW PANEL -->
     <section class="card attached" id="panel-review" style="display:none;">
-      <div class="card-h"><h3><span class="idx">A.</span>Contractor Doc Review — Pipe Wall Thickness Calc Sheet</h3><span style="font-family:var(--mono);font-size:10.5px;color:#8A97A0;">review module v1.3 — project spec profiles (2026-07-14)</span></div>
+      <div class="card-h"><h3><span class="idx">A.</span>Contractor Doc Review — Pipe Wall Thickness Calc Sheet</h3><span style="font-family:var(--mono);font-size:10.5px;color:#8A97A0;">review module v1.4 — tabbed UI (2026-07-14)</span></div>
       <div class="card-body">
         <p class="hint">Import a contractor-issued <b>Pipe Wall Thickness Calculation</b> workbook (one sheet per line class; sizes as rows; design T/P cases as column groups). Every size &times; case is recomputed <b>independently</b> per ASME B31.3-2024 Eq. 3a against this tool's own Table A-1 material database, and every deviation is flagged for comment. Parsing is <b>anchor-based</b> (header rows are found by text — "NPS…", "T=…,P=…" — not by fixed cell addresses), so moderate layout differences between contractors are tolerated.</p>
         <div class="grid2" style="margin-top:12px;">
@@ -617,6 +625,51 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
       </div>
     </section>
 
+    <!-- MATERIAL DATABASE PANEL -->
+    <section class="card" id="panel-matdb" style="display:none;">
+        <div class="card-h">
+          <h3><span class="idx">A.</span>Material Database — ASME B31.3 Table A-1 Allowable Stress Data</h3>
+          <div style="display:flex;gap:8px;align-items:center;">
+            <button class="small-btn" onclick="addMaterialRow()">+ Add material</button>
+            <button class="small-btn" onclick="exportDB()">Export DB (.xlsx)</button>
+            <button class="small-btn" onclick="exportDbJson()">⬇ Export DB (.json, versioned)</button>
+            <button class="small-btn" onclick="document.getElementById('db-json-input').click()">⬆ Import DB (.json)</button>
+            <input type="file" id="db-json-input" accept=".json" style="display:none;" onchange="importDbJson(event)">
+          </div>
+        </div>
+        <div class="card-body">
+          <p class="hint">Materials with a source citation were extracted directly from the ASME B31.3-2024 Table A-1 pages you supplied (Basic Allowable Stresses in Tension — SI Units), with the source Line No. and page cited in the Reference column. The S-Table column holds the full temperature-dependent stress curve as it appears in the standard; the calculator linearly interpolates between tabulated points for design temperatures that fall between two entries — only the interpolation method is added, not the tabulated values themselves. Rows with an empty S-Table are placeholders — add data or supply the relevant standard page to populate them.</p>
+          <p class="hint"><b>Document control:</b> this database is stored only in this browser's local storage — it is not shared between users/machines and is lost if the browser data is cleared. Use <b>Export DB (.json, versioned)</b> to save a dated, revision-stamped snapshot you can archive/share, and <b>Import DB (.json)</b> to load a previously exported (or colleague-supplied) snapshot. Importing REPLACES the current in-browser database after confirmation.</p>
+          <div style="overflow-x:auto;">
+          <table class="data" id="material-table">
+            <thead><tr>
+              <th style="width:13%">Spec / Grade</th>
+              <th style="width:16%">Description</th>
+              <th style="width:9%">Form</th>
+              <th style="width:8%">Min °C</th>
+              <th style="width:8%">Max °C</th>
+              <th style="width:24%">S-Table (°C:MPa, comma-sep.)</th>
+              <th style="width:16%">Reference</th>
+              <th style="width:4%"></th>
+            </tr></thead>
+            <tbody id="material-tbody"></tbody>
+          </table>
+          </div>
+        </div>
+    </section>
+
+    <!-- PROJECT SPEC PROFILE -->
+    <section class="card" id="panel-spec" style="display:none;">
+      <div class="card-h"><h3><span class="idx">A.</span>Project Spec Profile — Machine-Checkable Project Requirements</h3>
+        <div style="display:flex;gap:8px;">
+          <button class="small-btn" onclick="exportSpecProfile()">⬇ Export profile (.json)</button>
+          <button class="small-btn" onclick="document.getElementById('spec-json-input').click()">⬆ Import profile (.json)</button>
+          <input type="file" id="spec-json-input" accept=".json" style="display:none;" onchange="importSpecProfile(event)">
+        </div>
+      </div>
+      <div class="card-body" id="spec-profile-body"></div>
+    </section>
+
     </div>
 
     <div class="workspace-side">
@@ -677,26 +730,8 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
       </div>
     </section>
 
-    <!-- MATERIAL DATABASE ACCESS (section moved to end of form; content lives in modal below) -->
-    <section class="card">
-      <div class="card-h"><h3><span class="idx">C.</span>Material Database</h3>
-        <button class="small-btn" onclick="openDbModal()">⚙ Open Material Database</button>
-      </div>
-      <div class="card-body">
-        <p class="hint" style="margin:0;">Review, edit, or add the allowable stress (S) data, per-material temperature range, and source reference used by Sections A/B above for both Single Line and Batch modes. Changes here apply immediately.</p>
-      </div>
-    </section>
-    <!-- PROJECT SPEC PROFILE -->
-    <section class="card">
-      <div class="card-h"><h3><span class="idx">D.</span>Project Spec Profile</h3>
-        <div style="display:flex;gap:8px;">
-          <button class="small-btn" onclick="exportSpecProfile()">⬇ Export profile (.json)</button>
-          <button class="small-btn" onclick="document.getElementById('spec-json-input').click()">⬆ Import profile (.json)</button>
-          <input type="file" id="spec-json-input" accept=".json" style="display:none;" onchange="importSpecProfile(event)">
-        </div>
-      </div>
-      <div class="card-body" id="spec-profile-body"></div>
-    </section>
+
+
 
 
     <!-- CALCULATION BREAKDOWN MODAL -->
@@ -712,41 +747,6 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
       </div>
     </div>
 
-    <!-- MATERIAL DATABASE MODAL -->
-    <div class="modal-overlay" id="db-modal">
-      <div class="modal-box">
-        <div class="card-h">
-          <h3>Material Database</h3>
-          <div style="display:flex;gap:8px;align-items:center;">
-            <button class="small-btn" onclick="addMaterialRow()">+ Add material</button>
-            <button class="small-btn" onclick="exportDB()">Export DB (.xlsx)</button>
-            <button class="small-btn" onclick="exportDbJson()">⬇ Export DB (.json, versioned)</button>
-            <button class="small-btn" onclick="document.getElementById('db-json-input').click()">⬆ Import DB (.json)</button>
-            <input type="file" id="db-json-input" accept=".json" style="display:none;" onchange="importDbJson(event)">
-            <button class="modal-close" onclick="closeDbModal()">✕ Close</button>
-          </div>
-        </div>
-        <div class="card-body">
-          <p class="hint">Materials with a source citation were extracted directly from the ASME B31.3-2024 Table A-1 pages you supplied (Basic Allowable Stresses in Tension — SI Units), with the source Line No. and page cited in the Reference column. The S-Table column holds the full temperature-dependent stress curve as it appears in the standard; the calculator linearly interpolates between tabulated points for design temperatures that fall between two entries — only the interpolation method is added, not the tabulated values themselves. Rows with an empty S-Table are placeholders — add data or supply the relevant standard page to populate them.</p>
-          <p class="hint"><b>Document control:</b> this database is stored only in this browser's local storage — it is not shared between users/machines and is lost if the browser data is cleared. Use <b>Export DB (.json, versioned)</b> to save a dated, revision-stamped snapshot you can archive/share, and <b>Import DB (.json)</b> to load a previously exported (or colleague-supplied) snapshot. Importing REPLACES the current in-browser database after confirmation.</p>
-          <div style="overflow-x:auto;">
-          <table class="data" id="material-table">
-            <thead><tr>
-              <th style="width:13%">Spec / Grade</th>
-              <th style="width:16%">Description</th>
-              <th style="width:9%">Form</th>
-              <th style="width:8%">Min °C</th>
-              <th style="width:8%">Max °C</th>
-              <th style="width:24%">S-Table (°C:MPa, comma-sep.)</th>
-              <th style="width:16%">Reference</th>
-              <th style="width:4%"></th>
-            </tr></thead>
-            <tbody id="material-tbody"></tbody>
-          </table>
-          </div>
-        </div>
-      </div>
-    </div>
 
     <footer class="legal">
       <div class="danger" style="margin:0 0 16px;">
@@ -1294,9 +1294,9 @@ function onMaterialChange(){
 }
 
 /* ---------------- Modal ---------------- */
-function openDbModal(){ document.getElementById('db-modal').classList.add('open'); }
-function closeDbModal(){ document.getElementById('db-modal').classList.remove('open'); }
-document.getElementById('db-modal').addEventListener('click', function(e){ if(e.target===this) closeDbModal(); });
+function openDbModal(){ switchMode('matdb'); }
+function closeDbModal(){ switchMode('single'); }
+/* material DB is now a tab (panel-matdb); modal removed */
 function openCalcModal(){ document.getElementById('calc-modal').classList.add('open'); }
 function closeCalcModal(){ document.getElementById('calc-modal').classList.remove('open'); }
 document.getElementById('calc-modal').addEventListener('click', function(e){ if(e.target===this) closeCalcModal(); });
@@ -1975,18 +1975,16 @@ function exportCalc(){
    ================================================================ */
 
 function switchMode(mode){
-  document.getElementById('tab-single').classList.toggle('active', mode==='single');
-  document.getElementById('tab-info').classList.toggle('active', mode==='info');
-  document.getElementById('tab-batch').classList.toggle('active', mode==='batch');
-  document.getElementById('tab-review').classList.toggle('active', mode==='review');
-  document.getElementById('panel-single').style.display = mode==='single' ? 'block' : 'none';
-  document.getElementById('panel-batch').style.display = mode==='batch' ? 'block' : 'none';
-  document.getElementById('panel-inspector').style.display = mode==='info' ? 'block' : 'none';
-  document.getElementById('panel-review').style.display = mode==='review' ? 'block' : 'none';
+  const tabs  ={single:'tab-single',  info:'tab-info',       batch:'tab-batch',  review:'tab-review',  matdb:'tab-matdb',   spec:'tab-spec'};
+  const panels={single:'panel-single',info:'panel-inspector',batch:'panel-batch',review:'panel-review',matdb:'panel-matdb', spec:'panel-spec'};
+  Object.entries(tabs).forEach(([m,id])=>{ const el=document.getElementById(id); if(el) el.classList.toggle('active', mode===m); });
+  Object.entries(panels).forEach(([m,id])=>{ const el=document.getElementById(id); if(el) el.style.display = mode===m ? 'block' : 'none'; });
   document.getElementById('workspace').classList.toggle('mode-batch', mode!=='single');
   document.getElementById('batch-results-card').style.display='none';
   document.getElementById('review-results-card').style.display = (mode==='review' && reviewResults) ? 'block' : 'none';
   if(mode==='info') renderInspectorSelects();
+  if(mode==='matdb') renderMaterialTable();
+  if(mode==='spec') renderSpecProfileUI();
 }
 
 const LINE_LIST_HEADERS = ["Line No / Tag","NPS","Custom OD (mm)","Piping Class","Material Spec/Grade",

@@ -633,6 +633,7 @@ table.sch tr.bstatus-warn td{color:var(--amber-dk);}
             <button class="small-btn" onclick="addMaterialRow()">+ Add material</button>
             <button class="small-btn" onclick="exportDB()">Export DB (.xlsx)</button>
             <button class="small-btn" onclick="exportDbJson()">⬇ Export DB (.json, versioned)</button>
+          <button class="small-btn" onclick="exportMaterialsForPmsToolkit()" title="Download materials.json ready to upload into PMS-Toolkit">⬇ Export for PMS-Toolkit (materials.json)</button>
             <button class="small-btn" onclick="document.getElementById('db-json-input').click()">⬆ Import DB (.json)</button>
             <input type="file" id="db-json-input" accept=".json" style="display:none;" onchange="importDbJson(event)">
           </div>
@@ -1182,6 +1183,38 @@ function delMat(i){ materials.splice(i,1); saveDB(); renderMaterialTable(); }
 function addMaterialRow(){ materials.push({spec:"New material",desc:"",form:"",minTemp:"",maxTemp:"",s:"",ref:""}); saveDB(); renderMaterialTable(); }
 
 const DB_JSON_SCHEMA_VERSION = 1;
+
+function exportMaterialsForPmsToolkit(){
+  // Convert the current (possibly edited) material DB into the PMS-Toolkit datapack
+  // format: {meta, materials:[{spec,grade,family,min_temp,max_temp,s:[[T,S],...]}]}.
+  function splitSpec(spec){
+    var m=/\bGr\.?\s*([A-Za-z0-9]+)/i.exec(spec||'');
+    if(m) return [spec.slice(0,m.index).trim(), m[1]];
+    m=/\b(TP\d+[A-Za-z]*|X\d+|P\d+|F\d+|WPB|WCB)\b/i.exec(spec||'');
+    if(m) return [(spec.slice(0,m.index)+spec.slice(m.index+m[0].length)).replace(/\s+/g,' ').trim().replace(/,$/,''), m[1]];
+    return [spec, null];
+  }
+  function parseS(str){
+    var out=[]; (str||'').split(',').forEach(function(p){ p=p.trim(); var i=p.indexOf(':');
+      if(i>0){ var t=parseFloat(p.slice(0,i)), v=parseFloat(p.slice(i+1)); if(!isNaN(t)&&!isNaN(v)) out.push([t,v]); } });
+    return out;
+  }
+  var AUST=/austenit|stainless|18Cr|Cr-\d*Ni|TP3\d\d|CF8|A312|A358|A403/i;
+  var srcArr = (typeof materials!=='undefined' && materials) ? materials : (typeof DEFAULT_MATERIALS!=='undefined'?DEFAULT_MATERIALS:[]);
+  var mats = srcArr.map(function(m){
+    var sg=splitSpec(m.spec||''); var s=parseS(m.s);
+    if(!s.length) return null;
+    return {spec:sg[0], grade:sg[1], family:(AUST.test((m.spec||'')+' '+(m.desc||''))?'austenitic':'ferritic'),
+            min_temp:m.minTemp, max_temp:m.maxTemp, s:s};
+  }).filter(Boolean);
+  var payload={meta:{schema:'material-master v1', stress_units:'MPa', temp_units:'C',
+    source:'MechToolkit B31.3 calculator', exportedAt:new Date().toISOString()}, materials:mats};
+  var blob=new Blob([JSON.stringify(payload,null,1)],{type:'application/json'});
+  var url=URL.createObjectURL(blob); var a=document.createElement('a');
+  a.href=url; a.download='materials.json'; document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  alert('Exported '+mats.length+' materials to materials.json.\nUpload it in PMS-Toolkit:  Data → Load my data → Material stress data.');
+}
 
 function exportDbJson(){
   const payload = {
